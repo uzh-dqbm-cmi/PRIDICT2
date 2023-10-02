@@ -5,6 +5,10 @@ Additionally, nicking guides (including DeepSpCas9 score from Kim et al. 2019)
 and primers for NGS amplicon (based on Primer3 from Untergasser et al. 2012) 
 are designed in separate output file.
 
+To check editability of your locus based on chromatin context, 
+check out ePRIDICT (epigenetic based PRIme editing efficiency preDICTion),
+available from https://github.com/Schwank-Lab/epridict.
+
 """
 
 
@@ -52,7 +56,7 @@ import primer3
 from pridict.pridictv2.utilities import *
 from pridict.pridictv2.dataset import *
 from pridict.pridictv2.predict_outcomedistrib import *
-from DeepCas9_TestCode import runprediction
+from trained_models.DeepCas9_TestCode import runprediction
 
     
 
