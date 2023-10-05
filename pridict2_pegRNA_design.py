@@ -855,7 +855,7 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
                 # average_unintended_scores[cell_type].append(unintendededitingpredictionlist)
 
                 # Inserting cell-type specific columns into pegdataframe
-                pegdataframe.insert(len(pegdataframe.columns), f'{model_id}_editing_Score_deep_{cell_type}', editingpredictionlist)
+                # pegdataframe.insert(len(pegdataframe.columns), f'{model_id}_editing_Score_deep_{cell_type}', editingpredictionlist)
                 # pegdataframe.insert(len(pegdataframe.columns), f'{model_id}_unintended_Score_deep_{cell_type}', unintendededitingpredictionlist)
 
         for cell_type in cell_types:

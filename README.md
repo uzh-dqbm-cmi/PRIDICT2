@@ -25,7 +25,8 @@ For questions or suggestions, please either:
 
 ## Getting Started
 
-### Installation using Anaconda (Linux, Mac OS or Windows) 🐍
+### Installation using Anaconda (Linux or Mac OS) 🐍
+Windows is currently NOT supported!
 
 The easiest way to install and manage Python packages on various OS platforms is through [Anaconda](https://docs.anaconda.com/anaconda/install/). Once installed, any package (even if not available on Anaconda channel) could be installed using pip. 
 
@@ -41,6 +42,9 @@ The easiest way to install and manage Python packages on various OS platforms is
         
     # activate the created environment
     conda activate pridict2
+
+    # pytorch has to be installed separately here:
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
     
     	### ONLY FOR M1 (or newer) Mac you need to additionally run the following conda install command (tensorflow): 
     	conda install conda-forge::tensorflow
