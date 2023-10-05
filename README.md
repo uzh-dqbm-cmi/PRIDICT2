@@ -8,7 +8,7 @@
 
 ## Complementary Model
 
-- **ePRIDICT**: This model focuses on the influence of local chromatin context on prime editing efficiencies and is designed to complement PRIDICT2.0. [Access GitHub Repository](https://github.com/Schwank-Lab/epridict)
+- **ePRIDICT**: This model focuses on the influence of local chromatin context (K562) on prime editing efficiencies and is designed to complement PRIDICT2.0. [Access GitHub Repository](https://github.com/Schwank-Lab/epridict)
 
 ## Resources
 
