@@ -1,15 +1,29 @@
 # PRIDICT2.0: PRIme editing guide RNA preDICTion 2.0
 
-![PRIDICT logo](pridict_logo.png)
+![PRIDICT logo](dataset/PRIDICT2_logo.jpg)
 
-This is the repository to run the `PRIDICT2.0` model on your local machine. `PRIDICT2.0` builds on previous work from [PRIDICT](https://rdcu.be/c3IM5) and further details on changes/improvements can be accessed [here](xxx).
-Also check out our `ePRIDICT` prediction model ([link to repository](https://github.com/Schwank-Lab/epridict)), which is complementary to the sequence-context based `PRIDICT2.0` as it predicts how local chromatin-context influences prime editing efficiencies.
+## Overview
 
-For accessing Supplementary Files, click [here](xxx).
+`PRIDICT2.0` is an advanced version of the original [PRIDICT](https://rdcu.be/c3IM5) model designed for predicting the efficiency of prime editing guide RNAs. This repository allows you to run the model locally. For details on advancements over the original model, refer to our [publication](xxx).
 
-To run `PRIDICT2.0` online, see our [webapp](https://pridict.it/).
+## Complementary Model
 
---------------------------
+- **ePRIDICT**: This model focuses on the influence of local chromatin context on prime editing efficiencies and is designed to complement PRIDICT2.0. [Access GitHub Repository](https://github.com/Schwank-Lab/epridict)
+
+## Resources
+
+- **Supplementary Files**: [Access Here](xxx)
+- **Web Application**: For an online version of PRIDICT2.0, visit [our webapp](https://pridict.it/).
+
+## Contact
+
+For questions or suggestions, please either:
+- Email us at [nicolas.mathis@pharma.uzh.ch](mailto:nicolas.mathis@pharma.uzh.ch)
+- Open a GitHub issue
+
+
+
+## Getting Started
 
 ### Installation using Anaconda (Linux, Mac OS or Windows) 🐍
 
@@ -65,7 +79,6 @@ The easiest way to install and manage Python packages on various OS platforms is
   -  `--nicking`: Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction.
   -  `--ngsprimer`: Additionally, design NGS primers for edit based on Primer3 design.
 ```shell
-
 python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence 'GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGGCTACGGCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC'
 ``` 
 --------------------------
@@ -83,8 +96,6 @@ python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence 'GCCTGGA
   -  `--nicking`: Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction.
   -  `--ngsprimer`: Additionally, design NGS primers for edit based on Primer3 design.
 ```shell
-
  python pridict2_pegRNA_design.py batch --input-fname batch_template.csv --output-fname batchseqs
-
 ``` 
 --------------------------
