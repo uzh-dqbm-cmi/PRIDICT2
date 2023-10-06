@@ -254,26 +254,34 @@ def nickingguide(original_seq, PAMposition, protospacerlength):
 
     return nickprotospacer, nickdeepcas9
 
+def get_prieml_model_template():
+    device = get_device(True, 0)
+    wsize = 20
+    normalize_opt = 'max'
+    # create a model template that will be used to load/instantiate a target trained model
+    prieml_model = PRIEML_Model(device, wsize=wsize, normalize=normalize_opt, fdtype=torch.float32)
+    return prieml_model
+
 def load_pridict_model(run_ids=[0]):
     """construct and return PRIDICT model along with model files directory """
     models_lst_dict = {}  # Initialize a dictionary to hold lists of models keyed by model_id
-    device = get_device(True, 0)
-    wsize = 20
     repo_dir = os.path.join(os.path.abspath('./'))
     modellist = [
         ('PRIDICT1_1', 'pe_rnn_distribution_multidata', 'exp_2023-08-25_20-55-53'),
         ('PRIDICT1_2', 'pe_rnn_distribution_multidata', 'exp_2023-08-28_22-22-26')
     ]
-    for model in modellist:
-        models_lst = []  # Initialize models_lst for each model
-        model_id, original_folder, mfolder = model
+    
+    # create a model template that will be used to load/instantiate a target trained model
+    prieml_model = get_prieml_model_template()
 
-        prieml_model = PRIEML_Model(device, wsize=wsize, normalize='max', fdtype=torch.float32)
-        
-        for run_num in run_ids:
+    for model_desc_tup in modellist:
+        models_lst = []  # Initialize models_lst for each model
+        model_id, __, mfolder = model_desc_tup
+
+        for run_num in run_ids: # add the different model runs (i.e. based on 5 folds)
             model_dir = os.path.join(repo_dir, 'trained_models', model_id.lower(), mfolder, 'train_val', f'run_{run_num}')
-            prieml_model.build_retrieve_models(model_dir)
-            models_lst.append((prieml_model, model_dir))
+            loaded_model = prieml_model.build_retrieve_models(model_dir)
+            models_lst.append((loaded_model, model_dir))
         
         models_lst_dict[model_id] = models_lst  # Add to the dictionary
 
@@ -287,7 +295,6 @@ def deeppridict(pegdataframe, models_lst_dict):
         models_lst: list of tuples of (pridict_model, model_run_dir)
     
     """
-    all_avg_preds = {} 
 
     # setup the dataframe
     deepdfcols = ['wide_initial_target', 'wide_mutated_target', 'deepeditposition', 
@@ -315,43 +322,35 @@ def deeppridict(pegdataframe, models_lst_dict):
                                               axis=1)
     
     plain_tcols = ['averageedited', 'averageunedited', 'averageindel']
-    for model_id, models_lst in models_lst_dict.items():
-        cell_types=['K562','HEK']
+    cell_types = get_cell_types()
+    batch_size = int(1500/len(cell_types))
 
+    prieml_model = get_prieml_model_template()
+    # data processing for the same data can be done once given that we already specified the cell_types a priori
+    dloader = prieml_model.prepare_data(deepdf, 
+                                        None, # since we are specifying cell types model_name can be ignored
+                                        cell_types=cell_types, 
+                                        y_ref=[], 
+                                        batch_size=batch_size)
+    
+    all_avg_preds = {} 
+
+    for model_id, model_runs_lst in models_lst_dict.items():
+    
         pred_dfs = [] # List to store prediction dataframes for each model
-
-        for prieml_model, model_dir in models_lst: # Iterate over each model
-            dloader = prieml_model.prepare_data(deepdf, 
-                                                model_id,
-                                                cell_types=cell_types, 
-                                                y_ref=[], 
-                                                batch_size=1500)
-            
-            # Predict using the current model
-            pred_df = prieml_model.predict_from_dloader(dloader, model_dir, y_ref=plain_tcols)
-
-            pred_df['model'] = model_id
-            pred_dfs.append(pred_df) # Append the prediction dataframe to the list
-
-        # split numeric and non-numeric data
-        numeric_cols = ['pred_averageedited', 'pred_averageunedited', 'pred_averageindel']
-        non_numeric_cols = ['seq_id', 'dataset_name', 'model']
-
-        numeric_dfs = []
-        for df in pred_dfs:
-            numeric_dfs.append(df[numeric_cols])
         
-        non_numeric_df = pred_dfs[0][non_numeric_cols]  # assuming non-numeric cols are the same in all dfs
-
-        # convert list of DataFrames to a 3D numpy array
-        arr = np.stack([df.values for df in numeric_dfs])
-
-        # compute the mean over the first axis (the models)
-        avg_preds_numeric = pd.DataFrame(arr.mean(axis=0), columns=numeric_cols)
-
-        # combine averaged numeric predictions with non-numeric data
-        avg_preds = pd.concat([non_numeric_df, avg_preds_numeric], axis=1)
-
+        runs_c = 0
+        for loaded_model_lst, model_dir in model_runs_lst: # Iterate over each model
+            # Predict using the current model
+            pred_df = prieml_model.predict_from_dloader_using_loaded_models(dloader, loaded_model_lst, y_ref=plain_tcols)
+            pred_df['run_num'] = runs_c # this is irrelevant as we will average at the end
+            pred_dfs.append(pred_df) # Append the prediction dataframe to the list
+            runs_c += 1
+        # compuate average prediction across runs
+        pred_df_allruns = pd.concat(pred_dfs, axis=0, ignore_index=True)
+        avg_preds = prieml_model.compute_avg_predictions(pred_df_allruns)
+        avg_preds['model'] = model_id
+        # store the average prediction dataframe in for a specified model in a dictionary
         all_avg_preds[model_id] = avg_preds
     return all_avg_preds
 
@@ -833,41 +832,52 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
 
 
         # Extracting cell types from model
-        cell_types=['K562','HEK']
+        cell_types = get_cell_types()
 
         # Inserting common columns outside the loop
         pegdataframe.insert(len(pegdataframe.columns), 'sequence_name', name)
 
-        average_editing_scores = {cell_type: [] for cell_type in cell_types}
-        # average_unintended_scores = {cell_type: [] for cell_type in cell_types}
 
-        for model_id, pred_df in all_avg_preds.items():
-            # Looping over each cell type
-            for cell_type in cell_types:
-                # Filtering the dataframe based on cell type
-                pred_df_cell = pred_df[pred_df['dataset_name'] == cell_type]
+        # average_editing_scores = {cell_type: [] for cell_type in cell_types}
+        # # average_unintended_scores = {cell_type: [] for cell_type in cell_types}
+
+        # for model_id, pred_df in all_avg_preds.items():
+        #     # Looping over each cell type
+        #     for cell_type in cell_types:
+        #         # Filtering the dataframe based on cell type
+        #         pred_df_cell = pred_df[pred_df['dataset_name'] == cell_type]
                 
-                # Calculating the editing prediction lists
-                editingpredictionlist = (pred_df_cell['pred_averageedited']*100).tolist()
-                # unintendededitingpredictionlist = (pred_df_cell['pred_averageindel']*100).tolist()
+        #         # Calculating the editing prediction lists
+        #         editingpredictionlist = (pred_df_cell['pred_averageedited']*100).tolist()
+        #         # unintendededitingpredictionlist = (pred_df_cell['pred_averageindel']*100).tolist()
 
-                average_editing_scores[cell_type].append(editingpredictionlist)
-                # average_unintended_scores[cell_type].append(unintendededitingpredictionlist)
+        #         average_editing_scores[cell_type].append(editingpredictionlist)
+        #         # average_unintended_scores[cell_type].append(unintendededitingpredictionlist)
 
-                # Inserting cell-type specific columns into pegdataframe
-                # pegdataframe.insert(len(pegdataframe.columns), f'{model_id}_editing_Score_deep_{cell_type}', editingpredictionlist)
-                # pegdataframe.insert(len(pegdataframe.columns), f'{model_id}_unintended_Score_deep_{cell_type}', unintendededitingpredictionlist)
+        #         # Inserting cell-type specific columns into pegdataframe
+        #         # pegdataframe.insert(len(pegdataframe.columns), f'{model_id}_editing_Score_deep_{cell_type}', editingpredictionlist)
+        #         # pegdataframe.insert(len(pegdataframe.columns), f'{model_id}_unintended_Score_deep_{cell_type}', unintendededitingpredictionlist)
 
+        # for cell_type in cell_types:
+        #     average_editing = np.mean(average_editing_scores[cell_type], axis=0).tolist()
+        #     # average_unintended = np.mean(average_unintended_scores[cell_type], axis=0).tolist()
+
+        #     pegdataframe.insert(len(pegdataframe.columns), f'PRIDICT2_0_editing_Score_deep_{cell_type}', average_editing)
+        #     # pegdataframe.insert(len(pegdataframe.columns), f'PRIDICT2_0_unintended_Score_deep_{cell_type}', average_unintended)
+
+        tmp = [all_avg_preds[model_id] for model_id in all_avg_preds]
+        # seq_id, dataset_name, model, predictions cols
+        tmp_df = pd.concat(tmp, axis=0, ignore_index=True)
+        agg_df = compute_average_predictions(tmp_df, grp_cols=['seq_id', 'dataset_name'])
         for cell_type in cell_types:
-            average_editing = np.mean(average_editing_scores[cell_type], axis=0).tolist()
-            # average_unintended = np.mean(average_unintended_scores[cell_type], axis=0).tolist()
-
-            pegdataframe.insert(len(pegdataframe.columns), f'PRIDICT2_0_editing_Score_deep_{cell_type}', average_editing)
-            # pegdataframe.insert(len(pegdataframe.columns), f'PRIDICT2_0_unintended_Score_deep_{cell_type}', average_unintended)
+            cond  = agg_df['dataset_name'] == cell_type
+            avg_edited_eff = agg_df.loc[cond, 'pred_averageedited'].values*100
+            pegdataframe.insert(len(pegdataframe.columns), f'PRIDICT2_0_editing_Score_deep_{cell_type}', avg_edited_eff)
 
         def find_closest_percentile(value, ref_column, percentile_column):
             closest_index = np.abs(ref_column - value).idxmin()
-            return percentile_column.loc[closest_index]  
+            return percentile_column.loc[closest_index] 
+         
         libdiversedf = pd.read_csv('dataset/20230913_Library_Diverse_Ranking_Percentile.csv')    
         for cell_type in cell_types:
             pegdataframe.sort_values(by=[f'PRIDICT2_0_editing_Score_deep_{cell_type}'], inplace=True, ascending=False)
@@ -901,6 +911,14 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
         print(e)
     finally:
         queue.put(pindx)
+
+def compute_average_predictions(df, grp_cols=['seq_id', 'dataset_name']):
+    agg_df = df.groupby(by=grp_cols).mean()
+    agg_df.reset_index(inplace=True)
+    for colname in ('run_num', 'Unnamed: 0', 'model'):
+        if colname in agg_df:
+            del agg_df[colname]
+    return agg_df
 
 # editseq_test = 'GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGCTACCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC'
 
@@ -939,7 +957,9 @@ def run_processing_parallel(df, pred_dir, fname, num_proc_arg, nicking, ngsprime
                                      models_list=models_lst,
                                      queue=queue,
                                      pindx=q_i,
-                                     pred_dir=pred_dir, nicking=nicking, ngsprimer=ngsprimer)
+                                     pred_dir=pred_dir, 
+                                     nicking=nicking, 
+                                     ngsprimer=ngsprimer)
         q_processes.append(q_process)
         spawn_q_process(q_process)
 
@@ -961,7 +981,9 @@ def run_processing_parallel(df, pred_dir, fname, num_proc_arg, nicking, ngsprime
                                          models_list=models_lst,
                                          queue=queue,
                                          pindx=q_i_upd,
-                                         pred_dir=pred_dir, nicking=nicking, ngsprimer=ngsprimer)
+                                         pred_dir=pred_dir,
+                                        nicking=nicking, 
+                                        ngsprimer=ngsprimer)
 
             q_processes.append(q_process)
             spawn_q_process(q_process)
@@ -985,10 +1007,12 @@ def run_processing_parallel(df, pred_dir, fname, num_proc_arg, nicking, ngsprime
 def remove_col(df, colname):
     if colname in df:
         del df[colname]
+def get_cell_types():
+    return ['K562', 'HEK']
 
 def get_shortdf_colnames():
     models = ['PRIDICT1_1', 'PRIDICT1_2', 'PRIDICT2_0']  # List of models you are using
-    cell_types = ['K562', 'HEK']
+    cell_types = get_cell_types()
     base_cols = [
         'Protospacer-Oligo-FW', 'Protospacer-Oligo-RV', 'Extension-Oligo-FW',
         'Extension-Oligo-RV', 'Original_Sequence', 'Edited-Sequences',
