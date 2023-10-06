@@ -13,14 +13,10 @@ from .utilities import get_device, create_directory, ReaderWriter, dump_dict_con
 from .model import AnnotEmbeder_InitSeq, AnnotEmbeder_MutSeq, SH_Attention, FeatureEmbAttention, \
                    MLPEmbedder, MLPDecoder, MaskGenerator, MLPDecoderDistribution, init_params_
 from ..rnn.rnn import RNN_Net
-# from ..fft.model_fft import FFTNet
-from ..mem_trf.memtrf import MemoryTransformer
-from ..relpos_trf.model_trf import RelposTransformer
-from ..abspos_trf.model_trf import AbsposTransformer
+
 from .dataset import construct_load_dataloaders, construct_load_multiple_dataloaders, compute_correction_type_weight
-from .hyperparam import MemTrfHyperparamConfig, FFTHyperparamConfig, RNNHyperparamConfig, \
-                        RelTrfHyperparamConfig, AbsTrfHyperparamConfig, get_hyperparam_options
-from .loss import Logploss, CELoss, BalancedMSELoss
+from .hyperparam import RNNHyperparamConfig,  get_hyperparam_options
+from .loss import CELoss, BalancedMSELoss
 
 
 
@@ -55,20 +51,13 @@ def generate_models_config(hyperparam_config,
 
 def build_config_map(trf_tup, experiment_options, loss_func='NPloss'):
     model_name = experiment_options['model_name']
-    if(model_name == 'PE_MemTrf'):
-        hyperparam_config = MemTrfHyperparamConfig(*trf_tup)
-    elif(model_name == 'PE_FFT'):
-        hyperparam_config = FFTHyperparamConfig(*trf_tup)
-    elif(model_name == 'PE_RNN'):
+
+    if(model_name == 'PE_RNN'):
         hyperparam_config = RNNHyperparamConfig(*trf_tup)
     elif(model_name == 'PE_RNN_distribution'):
         hyperparam_config = RNNHyperparamConfig(*trf_tup)
     elif(model_name == 'PE_RNN_distribution_multidata'):
         hyperparam_config = RNNHyperparamConfig(*trf_tup)
-    elif(model_name == 'PE_RelTrf'):
-        hyperparam_config = RelTrfHyperparamConfig(*trf_tup)
-    elif(model_name == 'PE_AbsTrf'):
-        hyperparam_config = AbsTrfHyperparamConfig(*trf_tup)
     run_num = -1 
     fdtype = torch.float32
     experiment_options['run_num'] = run_num
@@ -78,54 +67,7 @@ def build_config_map(trf_tup, experiment_options, loss_func='NPloss'):
                                               loss_func=loss_func)
     return mconfig, options
 
-# def hyperparam_model_search(data_partitions, experiment_options, root_dir, run_gpu_map,
-#                             loss_func='RMSEloss', num_epochs=25,
-#                             prob_interval_truemax=0.05, prob_estim=0.95, random_seed=42
-#                             ):
-#     # run_num = get_random_run(len(data_partitions), random_seed=random_seed)
-#     run_num = 0
-#     dsettypes = ['train', 'validation']
-#     model_name = experiment_options['model_name']
-#     experiment_desc = experiment_options['experiment_desc']
-#     experiment_options['run_num'] = run_num
-
-#     # experiment_options = {'experiment_desc',
-#     #                       'model_name', 
-#     #                       'input_dim',
-#     #                       'run_num', 
-#     #                       'max_timedelta_encoding', 
-#     #                       'fdtype', 
-#     #                       'y_col'}
-#     hyperparam_options = get_hyperparam_options(prob_interval_truemax, prob_estim, model_name)
-#     data_partition = data_partitions[run_num]
-#     for counter, hyperparam_config in enumerate(hyperparam_options):
-
-#         mconfig, options = generate_models_config(hyperparam_config,
-#                                                   experiment_options,
-#                                                   loss_func=loss_func)
-#         options['num_epochs'] = num_epochs # override number of epochs here
-#         options['train_flag'] = True
-#         print("Running experiment {} config #{}".format(experiment_desc, counter))
-#         path = os.path.join(root_dir, 
-#                             'run_{}'.format(run_num),
-#                             'config_{}'.format(counter))
-#         wrk_dir = create_directory(path)
-
-
-
-#         #TODO fix this -- it has errors!!
-#         if loss_func in {'RMSEloss', 'MSEloss', 'Huberloss', 'L1loss', 'KLDloss'}:
-#             run_cont_pe_MemTrf(data_partition, 
-#                             dsettypes, 
-#                             mconfig,
-#                             options, 
-#                             wrk_dir,
-#                             state_dict_dir=None,
-#                             to_gpu=True, 
-#                             gpu_index=run_gpu_map[run_num])
-#         print("-"*15)
-
-# def run_cont_pe_MemTrf(data_partition, dsettypes, config, options, wrk_dir, state_dict_dir=None, to_gpu=True, gpu_index=0):
+# def run_cont_pe_RNN(data_partition, dsettypes, config, options, wrk_dir, state_dict_dir=None, to_gpu=True, gpu_index=0):
 #     pid = "{}".format(os.getpid())  # process id description
 #     # get data loader config
 #     dataloader_config = config['dataloader_config']
@@ -143,55 +85,75 @@ def build_config_map(trf_tup, experiment_options, loss_func='NPloss'):
 #         loss_func = nn.L1Loss(reduction='mean')
 #     elif loss_type == 'Huberloss':
 #         loss_func = nn.SmoothL1Loss(reduction='mean')
-#     elif loss_type == 'KLDloss':
-#         loss_func = nn.KLDivLoss(reduction='batchmean')
-#     elif loss_type == 'Logploss':
-#         loss_func = Logploss()
 
 #     num_epochs = options.get('num_epochs', 50)
 #     run_num = options.get('run_num')
-
 #     # parse config dict
 #     model_config = config['model_config']
 #     model_name = options['model_name']
-#     tbptt_steps = model_config.max_seq_len
-#     split_dim = 1 # sequence dimension
-#     if(model_name == 'PE_MemTrf'):
-#         init_annot_embed = AnnotEmbeder_InitSeq(embed_dim=model_config.embed_dim)
-#         mut_annot_embed = AnnotEmbeder_MutSeq(embed_dim=model_config.embed_dim)
+    
+#     target_names = ['averageedited', 'averageunedited', 'averageindel']
+#     target_outcome = options.get('target_outcome')
+#     outcome_indx = target_names.index(target_outcome)
 
-#         init_mem_trf = MemoryTransformer(embed_size=model_config.embed_dim,
-#                                          y_dim=model_config.embed_dim//2,
-#                                          max_seq_len=model_config.max_seq_len,
-#                                          max_memory_len=model_config.max_memory_len,
-#                                          num_attn_heads=model_config.num_attn_heads, 
-#                                          mlp_embed_factor=model_config.mlp_embed_factor, 
-#                                          nonlin_func=model_config.nonlin_func, 
-#                                          pdropout=model_config.p_dropout, 
-#                                          num_encoder_units=model_config.num_encoder_units,
-#                                          pos_encoding=model_config.pos_encoding,
-#                                          multihead_type=model_config.multihead_type,
-#                                          tie_uv=model_config.tie_uv)
+#     if(model_name == 'PE_RNN'):
+#         annot_embed = options.get('annot_embed')
+#         assemb_opt = options.get('assemb_opt')
+#         seqlevel_featdim = options.get('seqlevel_featdim')
 
-#         mut_mem_trf = MemoryTransformer(embed_size=model_config.embed_dim,
-#                                          y_dim=model_config.embed_dim//2,
-#                                          max_seq_len=model_config.max_seq_len,
-#                                          max_memory_len=model_config.max_memory_len,
-#                                          num_attn_heads=model_config.num_attn_heads, 
-#                                          mlp_embed_factor=model_config.mlp_embed_factor, 
-#                                          nonlin_func=model_config.nonlin_func, 
-#                                          pdropout=model_config.p_dropout, 
-#                                          num_encoder_units=model_config.num_encoder_units,
-#                                          pos_encoding=model_config.pos_encoding,
-#                                          multihead_type=model_config.multihead_type,
-#                                          tie_uv=model_config.tie_uv)
+#         init_annot_embed = AnnotEmbeder_InitSeq(embed_dim=model_config.embed_dim,
+#                                                 annot_embed=annot_embed,
+#                                                 assemb_opt=assemb_opt)
+#         mut_annot_embed = AnnotEmbeder_MutSeq(embed_dim=model_config.embed_dim,
+#                                               annot_embed=annot_embed,
+#                                               assemb_opt=assemb_opt)
+#         if assemb_opt == 'stack':
+#             init_embed_dim = model_config.embed_dim + 3*annot_embed
+#             mut_embed_dim = model_config.embed_dim + 2*annot_embed
+#             z_dim = np.min([init_embed_dim, mut_embed_dim])//2
+#         else:
+#             init_embed_dim = model_config.embed_dim
+#             mut_embed_dim = model_config.embed_dim
+#             z_dim = np.min([init_embed_dim, mut_embed_dim])//2 
 
-#         cross_attn = SH_Attention(model_config.embed_dim//2, model_config.embed_dim//2)
-#         featemb_attn = FeatureEmbAttention(model_config.embed_dim//2)
-#         decoder  = MLPDecoder(model_config.embed_dim//2,
-#                               embed_dim=model_config.embed_dim//4,
+#         init_encoder = RNN_Net(input_dim =init_embed_dim,
+#                               hidden_dim=model_config.embed_dim,
+#                               z_dim=z_dim,
+#                               device=device,
+#                               num_hiddenlayers=model_config.num_hidden_layers,
+#                               bidirection=model_config.bidirection,
+#                               rnn_pdropout=model_config.p_dropout,
+#                               rnn_class=model_config.rnn_class,
+#                               nonlinear_func=model_config.nonlin_func,
+#                               fdtype=fdtype)
+#         mut_encoder= RNN_Net(input_dim =mut_embed_dim,
+#                               hidden_dim=model_config.embed_dim,
+#                               z_dim=z_dim,
+#                               device=device,
+#                               num_hiddenlayers=model_config.num_hidden_layers,
+#                               bidirection=model_config.bidirection,
+#                               rnn_pdropout=model_config.p_dropout,
+#                               rnn_class=model_config.rnn_class,
+#                               nonlinear_func=model_config.nonlin_func,
+#                               fdtype=fdtype)
+
+#         local_featemb_init_attn = FeatureEmbAttention(z_dim)
+#         local_featemb_mut_attn = FeatureEmbAttention(z_dim)
+
+#         global_featemb_init_attn = FeatureEmbAttention(z_dim)
+#         global_featemb_mut_attn = FeatureEmbAttention(z_dim)
+
+#         seqlevel_featembeder = MLPEmbedder(inp_dim=seqlevel_featdim,
+#                                            embed_dim=z_dim,
+#                                            mlp_embed_factor=1,
+#                                            nonlin_func=model_config.nonlin_func,
+#                                            pdropout=model_config.p_dropout, 
+#                                            num_encoder_units=1)
+
+#         decoder  = MLPDecoder(5*z_dim,
+#                               embed_dim=z_dim,
 #                               outp_dim=1,
-#                               mlp_embed_factor=model_config.mlp_embed_factor,
+#                               mlp_embed_factor=2,
 #                               nonlin_func=model_config.nonlin_func, 
 #                               pdropout=model_config.p_dropout, 
 #                               num_encoder_units=1)
@@ -199,14 +161,18 @@ def build_config_map(trf_tup, experiment_options, loss_func='NPloss'):
 #         # define optimizer and group parameters
 #         models = ((init_annot_embed, 'init_annot_embed'), 
 #                   (mut_annot_embed, 'mut_annot_embed'),
-#                   (init_mem_trf, 'init_mem_trf'),
-#                   (mut_mem_trf, 'mut_mem_trf'),
-#                   (cross_attn, 'cross_attn'),
-#                   (featemb_attn, 'featemb_attn'),
+#                   (init_encoder, 'init_encoder'),
+#                   (mut_encoder, 'mut_encoder'),
+#                   (local_featemb_init_attn, 'local_featemb_init_attn'),
+#                   (local_featemb_mut_attn, 'local_featemb_mut_attn'),
+#                   (global_featemb_init_attn, 'global_featemb_init_attn'),
+#                   (global_featemb_mut_attn, 'global_featemb_mut_attn'),
+#                   (seqlevel_featembeder, 'seqlevel_featembeder'),
 #                   (decoder, 'decoder'))
 #         models_param = []
 #         for m, m_name in models:
 #             models_param.extend(list(m.parameters()))
+#             init_params_(m)
 
 #     if(state_dict_dir):  # load state dictionary of saved models
 #         for m, m_name in models:
@@ -247,8 +213,8 @@ def build_config_map(trf_tup, experiment_options, loss_func='NPloss'):
 #     ReaderWriter.dump_data(options, os.path.join(config_dir, 'exp_options.pkl'))
 #     # store attention weights for validation and test set
 #     seqid_fattnw_map = {dsettype: {} for dsettype in data_loaders if dsettype in {'test'}}
-#     mask_gen = MemTrf_MaskGenerator()
-
+#     mask_gen = MaskGenerator()
+#     print('updated!!')
 #     for epoch in range(num_epochs):
 #         # print("-"*35)
 #         for dsettype in dsettypes:
@@ -264,16 +230,19 @@ def build_config_map(trf_tup, experiment_options, loss_func='NPloss'):
 #             if(dsettype == 'train'):  # should be only for train
 #                 for m, m_name in models:
 #                     m.train()
+#                 requires_grad=True
 #             else:
 #                 for m, m_name in models:
 #                     m.eval()
+#                 requires_grad = False
 
 #             for i_batch, samples_batch in enumerate(tqdm(data_loader)):
 #                 # print('batch num:', i_batch)
 
 #                 X_init_nucl, X_init_proto, X_init_pbs, X_init_rt, \
 #                 X_mut_nucl, X_mut_pbs, X_mut_rt, \
-#                 x_init_len, x_mut_len, y_val, b_seqs_indx, b_seqs_id = samples_batch
+#                 x_init_len, x_mut_len, seqlevel_feat, \
+#                 y_val, b_seqs_indx, b_seqs_id = samples_batch
 
 
 #                 X_init_nucl = X_init_nucl.to(device)
@@ -284,83 +253,73 @@ def build_config_map(trf_tup, experiment_options, loss_func='NPloss'):
 #                 X_mut_nucl = X_mut_nucl.to(device)
 #                 X_mut_pbs = X_mut_pbs.to(device)
 #                 X_mut_rt = X_mut_rt.to(device)
-
-#                 X_init_batch = init_annot_embed(X_init_nucl, X_init_proto, X_init_pbs, X_init_rt)
-#                 X_mut_batch = mut_annot_embed(X_mut_nucl, X_mut_pbs, X_mut_rt)
-#                 # (bsize,)
-#                 y_batch = y_val.type(fdtype).to(device)
-#                 # masks (bsize, init_seqlen) or (bsize, mut_seqlen)
-#                 x_init_m = mask_gen.create_content_mask((X_init_batch.shape[0], X_init_batch.shape[1]), x_init_len)
-#                 x_mut_m =  mask_gen.create_content_mask((X_mut_batch.shape[0], X_mut_batch.shape[1]), x_mut_len)
-
-#                 # split pieces
-#                 x_init_pieces = X_init_batch.split(tbptt_steps, dim=split_dim) 
-#                 x_mut_pieces = X_mut_batch.split(tbptt_steps, dim=split_dim)
-#                 x_init_m_pieces = x_init_m.split(tbptt_steps, dim=split_dim)
-#                 x_mut_m_pieces = x_mut_m.split(tbptt_steps, dim=split_dim)
+#                 seqlevel_feat = seqlevel_feat.type(fdtype).to(device)
                 
-#                 #TODO: make sure that we harmonize the max seq len between mutated and init sequence
-#                 max_len = torch.max(torch.max(x_init_len), torch.max(x_mut_len)).item()
-#                 number_of_intervals = int(np.ceil(max_len/tbptt_steps)) # intervals to process
-#                 # print('number of intervals to process:', number_of_intervals)
-#                 # print('number of init pieces ', len(x_init_pieces), 'number of mut pieces ', len(x_mut_pieces))
+#                 with torch.set_grad_enabled(dsettype == 'train'):
+#                     X_init_batch = init_annot_embed(X_init_nucl, X_init_proto, X_init_pbs, X_init_rt)
+#                     X_mut_batch = mut_annot_embed(X_mut_nucl, X_mut_pbs, X_mut_rt)
+#                     # print('X_init_batch.shape:', X_init_batch.shape)
+#                     # print('X_mut_batch.shape:',X_mut_batch.shape)
+#                     # print('x_init_len.shape', x_init_len.shape)
+#                     # print('x_mut_len.shape:', x_mut_len.shape)
 
-#                 mem_init_states = None
-#                 mem_mut_states = None
-#                 z_lst = []
-#                 for tbptt_step in range(number_of_intervals):
-#                     x_init_trunc = x_init_pieces[tbptt_step]
-#                     x_init_m_trunc = x_init_m_pieces[tbptt_step]
-#                     x_mut_trunc = x_mut_pieces[tbptt_step].to(device)
-#                     x_mut_m_trunc = x_mut_m_pieces[tbptt_step].to(device)
-
-#                     # zero gradient
-#                     if(dsettype == 'train'):
-#                         optimizer.zero_grad()
+#                     # print(np.unique(x_init_len))
+#                     # print(np.unique(x_mut_len))
+#                     # (bsize,)
+#                     y_batch = 100*y_val.type(fdtype).to(device)[:, outcome_indx]
                     
-#                     mem_init_states, z_init = init_mem_trf(x_init_trunc, x_init_m_trunc, mem_init_states)
-#                     mem_mut_states, z_mut =  mut_mem_trf(x_mut_trunc, x_mut_m_trunc, mem_mut_states)
+#                     # masks (bsize, init_seqlen) or (bsize, mut_seqlen)
+#                     x_init_m = mask_gen.create_content_mask((X_init_batch.shape[0], X_init_batch.shape[1]), x_init_len)
+#                     x_mut_m =  mask_gen.create_content_mask((X_mut_batch.shape[0], X_mut_batch.shape[1]), x_mut_len)
+
+#                     __, z_init = init_encoder.forward_complete(X_init_batch, x_init_len, requires_grad=requires_grad)
+#                     __, z_mut =  mut_encoder.forward_complete(X_mut_batch, x_mut_len, requires_grad=requires_grad)
+        
+#                     max_seg_len = z_init.shape[1]
+#                     init_mask = x_init_m[:,:max_seg_len].to(device)
+#                     # global attention
+#                     # s (bsize, embed_dim)
+#                     s_init_global, __ = global_featemb_init_attn(z_init, mask=init_mask)
+#                     # local attention
+#                     s_init_local, __ = local_featemb_init_attn(z_init, mask=X_init_rt[:,:max_seg_len])
+
+#                     max_seg_len = z_mut.shape[1]
+#                     mut_mask = x_mut_m[:,:max_seg_len].to(device)
+#                     s_mut_global, __ = global_featemb_mut_attn(z_mut, mask=mut_mask)
+#                     s_mut_local, __ = local_featemb_mut_attn(z_mut, mask=X_mut_rt[:,:max_seg_len])
+
+#                     seqfeat = seqlevel_featembeder(seqlevel_feat)
+#                     # y (bsize, 1)
+#                     # y_hat_logit, y_sigma = decoder(torch.cat([s_init_global, s_init_local, s_mut_global, s_mut_local, seqfeat], axis=-1))
                     
-#                     # print('x_mut_m_trunc.shape:',x_mut_m_trunc.shape)
-#                     # print('x_init_m_trunc.shape:', x_init_m_trunc.shape)
-#                     mut_init_mask = mask_gen.create_query_key_mask(x_mut_m_trunc, x_init_m_trunc).to(device)
-#                     z_repr, __ = cross_attn(z_mut, z_init, z_init, mask=mut_init_mask)
-#                     z_lst.append(z_repr)
+#                     y_hat_logit = decoder(torch.cat([s_init_global, s_init_local, s_mut_global, s_mut_local, seqfeat], axis=-1))
 
-#                 # z (bsize, mut_seqlen, embed_dim)
-#                 z = torch.cat(z_lst, axis=split_dim)
-#                 max_seg_len = z.shape[1]
-#                 # print('z.shape:', z.shape)
-#                 mut_mask = x_mut_m[:,:max_seg_len].to(device)
-#                 # print('mut_mask.shape:', mut_mask.shape)
-#                 # s (bsize, embed_dim)
-#                 s, __ = featemb_attn(z, mask=mut_mask)
-#                 # bsize, 1
-#                 y_hat_logit, y_sigma = decoder(s)
-
-#                 if loss_type != 'Logploss':
 #                     loss = loss_func(y_batch, y_hat_logit)
-#                 else:
-#                     y_dist = torch.distributions.normal.Normal(y_hat_logit, y_sigma)
-#                     loss = loss_func(y_batch, y_dist)
 
+#                     # if loss_type != 'Logploss':
+#                     #     loss = loss_func(y_batch, y_hat_logit)
+#                     # else:
+#                     #     y_dist = torch.distributions.normal.Normal(y_hat_logit, y_sigma)
+#                     #     loss = loss_func(y_batch, y_dist)
 
-#                 pred_score.extend(y_hat_logit.view(-1).tolist())
-#                 ref_score.extend(y_batch.view(-1).tolist())
-#                 seqs_ids_lst.extend(list(b_seqs_id))
+#                     if(dsettype == 'train'):
+#                         # zero gradient
+#                         optimizer.zero_grad()
+#                         # print("computing loss")
+#                         # backward step (i.e. compute gradients)
+#                         loss.backward()
+#                         # optimzer step -- update weights
+#                         optimizer.step()
+#                         # after each batch step the scheduler
+#                         cyc_scheduler.step()
 
-#                 if(dsettype == 'train'):
-#                     # print("computing loss")
-#                     # backward step (i.e. compute gradients)
-#                     loss.backward()
-#                     # optimzer step -- update weights
-#                     optimizer.step()
-#                     # after each batch step the scheduler
-#                     cyc_scheduler.step()
+#                         # print(optimizer)
 
-#                     # print(optimizer)
+#                     pred_score.extend(y_hat_logit.view(-1).tolist())
+#                     ref_score.extend(y_batch.view(-1).tolist())
+#                     seqs_ids_lst.extend(list(b_seqs_id))
 
-#                 epoch_loss += loss.item()
+#                     epoch_loss += loss.item()
 
 #             # end of epoch
 #             epoch_loss_avgbatch[dsettype].append(epoch_loss/len(data_loader))
@@ -374,7 +333,7 @@ def build_config_map(trf_tup, experiment_options, loss_func='NPloss'):
 #                     for m, m_name in models:
 #                         torch.save(m.state_dict(), os.path.join(m_state_dict_dir, '{}.pkl'.format(m_name)))
 #                 if dsettype in {'test', 'validation'}:
-#                     predictions_df = build_predictions_df(seqs_ids_lst, ref_score, pred_score)
+#                     predictions_df = build_predictions_df(seqs_ids_lst, ref_score, pred_score, target_names)
 #                     predictions_path = os.path.join(wrk_dir, f'predictions_{dsettype}.csv')
 #                     predictions_df.to_csv(predictions_path)
 
@@ -389,1451 +348,6 @@ def build_config_map(trf_tup, experiment_options, loss_func='NPloss'):
 #                     fig_dir)
 #     # dump_scores
 #     dump_dict_content(score_dict, list(score_dict.keys()), 'score', wrk_dir)
-
-
-def run_cont_pe_MemTrf(data_partition, dsettypes, config, options, wrk_dir, state_dict_dir=None, to_gpu=True, gpu_index=0):
-    pid = "{}".format(os.getpid())  # process id description
-    # get data loader config
-    dataloader_config = config['dataloader_config']
-    cld = construct_load_dataloaders(data_partition, dsettypes, dataloader_config, wrk_dir)
-    # dictionaries by dsettypes
-    data_loaders, epoch_loss_avgbatch, score_dict, flog_out = cld
-
-    device = get_device(to_gpu, gpu_index)  # gpu device
-    fdtype = options['fdtype']
-    loss_type = options.get('loss_func', 'mse')
-
-    if loss_type == 'MSEloss' or loss_type == 'RMSEloss':
-        loss_func = nn.MSELoss(reduction='mean')
-    elif loss_type == 'L1loss':
-        loss_func = nn.L1Loss(reduction='mean')
-    elif loss_type == 'Huberloss':
-        loss_func = nn.SmoothL1Loss(reduction='mean')
-    elif loss_type == 'Logploss':
-        loss_func = Logploss()
-
-    num_epochs = options.get('num_epochs', 50)
-    run_num = options.get('run_num')
-
-    # parse config dict
-    model_config = config['model_config']
-    model_name = options['model_name']
-    tbptt_steps = model_config.max_seq_len
-    split_dim = 1 # sequence dimension
-    target_names = options['target_names']
-
-    if(model_name == 'PE_MemTrf'):
-        annot_embed = options.get('annot_embed')
-        assemb_opt = options.get('assemb_opt')
-
-        init_annot_embed = AnnotEmbeder_InitSeq(embed_dim=model_config.embed_dim,
-                                                annot_embed=annot_embed,
-                                                assemb_opt=assemb_opt)
-        mut_annot_embed = AnnotEmbeder_MutSeq(embed_dim=model_config.embed_dim,
-                                              annot_embed=annot_embed,
-                                              assemb_opt=assemb_opt)
-
-        if assemb_opt == 'stack':
-            init_embed_dim = model_config.embed_dim + 3*annot_embed
-            mut_embed_dim = model_config.embed_dim + 2*annot_embed
-            z_dim = np.min([init_embed_dim, mut_embed_dim])//2
-        else:
-            init_embed_dim = model_config.embed_dim
-            mut_embed_dim = model_config.embed_dim
-            z_dim = np.min([init_embed_dim, mut_embed_dim])//2 
-
-        init_mem_trf = MemoryTransformer(embed_size=init_embed_dim,
-                                         y_dim=z_dim,
-                                         max_seq_len=model_config.max_seq_len,
-                                         max_memory_len=model_config.max_memory_len,
-                                         num_attn_heads=model_config.num_attn_heads, 
-                                         mlp_embed_factor=model_config.mlp_embed_factor, 
-                                         nonlin_func=model_config.nonlin_func, 
-                                         pdropout=model_config.p_dropout, 
-                                         num_encoder_units=model_config.num_encoder_units,
-                                         pos_encoding=model_config.pos_encoding,
-                                         multihead_type=model_config.multihead_type,
-                                         tie_uv=model_config.tie_uv)
-        mut_mem_trf = MemoryTransformer(embed_size=mut_embed_dim,
-                                         y_dim=z_dim,
-                                         max_seq_len=model_config.max_seq_len,
-                                         max_memory_len=model_config.max_memory_len,
-                                         num_attn_heads=model_config.num_attn_heads, 
-                                         mlp_embed_factor=model_config.mlp_embed_factor, 
-                                         nonlin_func=model_config.nonlin_func, 
-                                         pdropout=model_config.p_dropout, 
-                                         num_encoder_units=model_config.num_encoder_units,
-                                         pos_encoding=model_config.pos_encoding,
-                                         multihead_type=model_config.multihead_type,
-                                         tie_uv=model_config.tie_uv)
-
-        local_featemb_init_attn = FeatureEmbAttention(z_dim)
-        local_featemb_mut_attn = FeatureEmbAttention(z_dim)
-        featemb_init_attn = FeatureEmbAttention(z_dim)
-        featemb_mut_attn = FeatureEmbAttention(z_dim)
-
-        seqlevel_featembeder = MLPEmbedder(inp_dim=22, # TODO: figure out how to pass this
-                                           embed_dim=z_dim,
-                                           mlp_embed_factor=1,
-                                           nonlin_func=model_config.nonlin_func,
-                                           pdropout=model_config.p_dropout, 
-                                           num_encoder_units=1)
-
-        decoder  = MLPDecoder(5*z_dim,
-                              embed_dim=z_dim,
-                              outp_dim=1,
-                              mlp_embed_factor=model_config.mlp_embed_factor,
-                              nonlin_func=model_config.nonlin_func, 
-                              pdropout=model_config.p_dropout, 
-                              num_encoder_units=1)
-
-        # define optimizer and group parameters
-        models = ((init_annot_embed, 'init_annot_embed'), 
-                  (mut_annot_embed, 'mut_annot_embed'),
-                  (init_mem_trf, 'init_encoder'),
-                  (mut_mem_trf, 'mut_encoder'),
-                  (local_featemb_init_attn, 'local_featemb_init_attn'),
-                  (local_featemb_mut_attn, 'local_featemb_mut_attn'),
-                  (featemb_init_attn, 'global_featemb_init_attn'),
-                  (featemb_mut_attn, 'global_featemb_mut_attn'),
-                  (seqlevel_featembeder, 'seqlevel_featembeder'),
-                  (decoder, 'decoder'))
-
-        models_param = []
-        for m, m_name in models:
-            models_param.extend(list(m.parameters()))
-            init_params_(m)
-
-    if(state_dict_dir):  # load state dictionary of saved models
-        for m, m_name in models:
-            m.load_state_dict(torch.load(os.path.join(state_dict_dir, '{}.pkl'.format(m_name)), map_location=device))
-
-    # update models fdtype and move to device
-    for m, m_name in models:
-        m.type(fdtype).to(device)
-
-    if('train' in data_loaders):
-        weight_decay = options.get('weight_decay', 1e-4)
-        # see paper Cyclical Learning rates for Training Neural Networks for parameters' choice
-        # `https://arxive.org/pdf/1506.01186.pdf`
-        # pytorch version >1.1, scheduler should be called after optimizer
-        # for cyclical lr scheduler, it should be called after each batch update
-        num_iter = len(data_loaders['train'])  # num_train_samples/batch_size
-        c_step_size = int(np.ceil(5*num_iter))  # this should be 2-10 times num_iter
-        base_lr = 3e-4
-        max_lr = 5*base_lr  # 3-5 times base_lr
-        optimizer = torch.optim.Adam(models_param, weight_decay=weight_decay, lr=base_lr)
-        cyc_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, 
-                                                          base_lr, 
-                                                          max_lr, 
-                                                          step_size_up=c_step_size,
-                                                          mode='triangular', 
-                                                          cycle_momentum=False)
-
-
-    if ('validation' in data_loaders):
-        m_state_dict_dir = create_directory(os.path.join(wrk_dir, 'model_statedict'))
-
-    if(num_epochs > 1):
-        fig_dir = create_directory(os.path.join(wrk_dir, 'figures'))
-
-    # dump config dictionaries on disk
-    config_dir = create_directory(os.path.join(wrk_dir, 'config'))
-    ReaderWriter.dump_data(config, os.path.join(config_dir, 'mconfig.pkl'))
-    ReaderWriter.dump_data(options, os.path.join(config_dir, 'exp_options.pkl'))
-    # store attention weights for validation and test set
-    seqid_fattnw_map = {dsettype: {} for dsettype in data_loaders if dsettype in {'test'}}
-    mask_gen = MaskGenerator()
-    print('updated!!')
-    for epoch in range(num_epochs):
-        # print("-"*35)
-        for dsettype in dsettypes:
-            print("device: {} | experiment_desc: {} | run_num: {} | epoch: {} | dsettype: {} | pid: {}"
-                  "".format(device, options.get('experiment_desc'), run_num, epoch, dsettype, pid))
-            pred_score = []
-            ref_score = []
-            seqs_ids_lst = []
-            data_loader = data_loaders[dsettype]
-
-            epoch_loss = 0.
-
-            if(dsettype == 'train'):  # should be only for train
-                for m, m_name in models:
-                    m.train()
-            else:
-                for m, m_name in models:
-                    m.eval()
-
-            for i_batch, samples_batch in enumerate(tqdm(data_loader)):
-                # print('batch num:', i_batch)
-
-                X_init_nucl, X_init_proto, X_init_pbs, X_init_rt, \
-                X_mut_nucl, X_mut_pbs, X_mut_rt, \
-                x_init_len, x_mut_len, seqlevel_feat, y_val, b_seqs_indx, b_seqs_id = samples_batch
-
-
-                X_init_nucl = X_init_nucl.to(device)
-                X_init_proto = X_init_proto.to(device)
-                X_init_pbs = X_init_pbs.to(device)
-                X_init_rt = X_init_rt.to(device)
-
-                X_mut_nucl = X_mut_nucl.to(device)
-                X_mut_pbs = X_mut_pbs.to(device)
-                X_mut_rt = X_mut_rt.to(device)
-
-                seqlevel_feat = seqlevel_feat.type(fdtype).to(device)
-
-                # zero gradient
-                if(dsettype == 'train'):
-                    optimizer.zero_grad()
-
-                with torch.set_grad_enabled(dsettype == 'train'):
-                    X_init_batch = init_annot_embed(X_init_nucl, X_init_proto, X_init_pbs, X_init_rt)
-                    X_mut_batch = mut_annot_embed(X_mut_nucl, X_mut_pbs, X_mut_rt)
-                    # (bsize,)
-                    y_batch = y_val.type(fdtype).to(device)
-                    # masks (bsize, init_seqlen) or (bsize, mut_seqlen)
-                    x_init_m = mask_gen.create_content_mask((X_init_batch.shape[0], X_init_batch.shape[1]), x_init_len)
-                    x_mut_m =  mask_gen.create_content_mask((X_mut_batch.shape[0], X_mut_batch.shape[1]), x_mut_len)
-
-                    # split pieces
-                    x_init_pieces = X_init_batch.split(tbptt_steps, dim=split_dim) 
-                    x_mut_pieces = X_mut_batch.split(tbptt_steps, dim=split_dim)
-                    x_init_m_pieces = x_init_m.split(tbptt_steps, dim=split_dim)
-                    x_mut_m_pieces = x_mut_m.split(tbptt_steps, dim=split_dim)
-                    
-                    #TODO: make sure that we harmonize the max seq len between mutated and init sequence
-                    max_len = torch.max(torch.max(x_init_len), torch.max(x_mut_len)).item()
-                    number_of_intervals = int(np.ceil(max_len/tbptt_steps)) # intervals to process
-                    # print('number of intervals to process:', number_of_intervals)
-                    # print('number of init pieces ', len(x_init_pieces), 'number of mut pieces ', len(x_mut_pieces))
-
-                    mem_init_states = None
-                    mem_mut_states = None
-                    z_init_lst = []
-                    z_mut_lst = []
-                    for tbptt_step in range(number_of_intervals):
-                        x_init_trunc = x_init_pieces[tbptt_step]
-                        x_init_m_trunc = x_init_m_pieces[tbptt_step]
-                        x_mut_trunc = x_mut_pieces[tbptt_step].to(device)
-                        x_mut_m_trunc = x_mut_m_pieces[tbptt_step].to(device)
-                        
-                        mem_init_states, z_init = init_mem_trf(x_init_trunc, x_init_m_trunc, mem_init_states)
-                        mem_mut_states, z_mut =  mut_mem_trf(x_mut_trunc, x_mut_m_trunc, mem_mut_states)
-            
-                        z_init_lst.append(z_init)
-                        z_mut_lst.append(z_mut)
-
-                    # z (bsize, mut_seqlen, embed_dim)
-                    z_init = torch.cat(z_init_lst, axis=split_dim)
-                    z_mut = torch.cat(z_mut_lst, axis=split_dim)
-
-                    max_seg_len = z_init.shape[1]
-                    # print('z.shape:', z.shape)
-                    init_mask = x_init_m[:,:max_seg_len].to(device)
-
-
-                    # global attention
-                    # s (bsize, embed_dim)
-                    s_init_global, __ = featemb_init_attn(z_init, mask=init_mask)
-                    # local attention
-                    s_init_local, __ = local_featemb_init_attn(z_init, mask=X_init_rt[:,:max_seg_len])
-
-                    max_seg_len = z_mut.shape[1]
-                    mut_mask = x_mut_m[:,:max_seg_len].to(device)
-                    s_mut_global, __ = featemb_mut_attn(z_mut, mask=mut_mask)
-                    s_mut_local, __ = local_featemb_mut_attn(z_mut, mask=X_mut_rt[:,:max_seg_len])
-
-                    seqfeat = seqlevel_featembeder(seqlevel_feat)
-
-                    # bsize, 1
-                    y_hat_logit, y_sigma = decoder(torch.cat([s_init_global, s_init_local, s_mut_global, s_mut_local, seqfeat], axis=-1))
-
-                    if loss_type != 'Logploss':
-                        loss = loss_func(y_hat_logit, y_batch)
-                    else:
-                        y_dist = torch.distributions.normal.Normal(y_hat_logit, y_sigma)
-                        loss = loss_func(y_batch, y_dist)
-
-
-                    pred_score.extend(y_hat_logit.view(-1).tolist())
-                    ref_score.extend(y_batch.view(-1).tolist())
-                    seqs_ids_lst.extend(list(b_seqs_id))
-
-                    if(dsettype == 'train'):
-                        # print("computing loss")
-                        # backward step (i.e. compute gradients)
-                        loss.backward()
-                        # optimzer step -- update weights
-                        optimizer.step()
-                        # after each batch step the scheduler
-                        cyc_scheduler.step()
-
-                        # print(optimizer)
-
-                    epoch_loss += loss.item()
-
-            # end of epoch
-            epoch_loss_avgbatch[dsettype].append(epoch_loss/len(data_loader))
-            modelscore = perfmetric_report_cont(pred_score, ref_score, 
-                                                epoch_loss_avgbatch[dsettype][-1], 
-                                                epoch, flog_out[dsettype])
-            perf = modelscore.spearman_corr
-            if(perf > score_dict[dsettype].spearman_corr):
-                score_dict[dsettype] = modelscore
-                if(dsettype == 'validation'):
-                    for m, m_name in models:
-                        torch.save(m.state_dict(), os.path.join(m_state_dict_dir, '{}.pkl'.format(m_name)))
-                if dsettype in {'test', 'validation'}:
-                    predictions_df = build_predictions_df(seqs_ids_lst, ref_score, pred_score, target_names)
-                    predictions_path = os.path.join(wrk_dir, f'predictions_{dsettype}.csv')
-                    predictions_df.to_csv(predictions_path)
-
-    if(num_epochs > 1):
-        for dsettype in epoch_loss_avgbatch:
-            plot_xy(np.arange(num_epochs), 
-                    epoch_loss_avgbatch[dsettype], 
-                    'number of epochs', 
-                    f'{loss_type} loss', 
-                    'epoch batch average loss', 
-                    dsettype,
-                    fig_dir)
-    # dump_scores
-    dump_dict_content(score_dict, list(score_dict.keys()), 'score', wrk_dir)
-
-
-def run_cont_pe_RelTrf(data_partition, dsettypes, config, options, wrk_dir, state_dict_dir=None, to_gpu=True, gpu_index=0):
-    pid = "{}".format(os.getpid())  # process id description
-    # get data loader config
-    dataloader_config = config['dataloader_config']
-    cld = construct_load_dataloaders(data_partition, dsettypes, dataloader_config, wrk_dir)
-    # dictionaries by dsettypes
-    data_loaders, epoch_loss_avgbatch, score_dict, flog_out = cld
-
-    device = get_device(to_gpu, gpu_index)  # gpu device
-    fdtype = options['fdtype']
-    loss_type = options.get('loss_func', 'mse')
-    infer_sigma = options.get('infer_sigma')
-
-    if loss_type == 'MSEloss' or loss_type == 'RMSEloss':
-        loss_func = nn.MSELoss(reduction='mean')
-    elif loss_type == 'L1loss':
-        loss_func = nn.L1Loss(reduction='mean')
-    elif loss_type == 'Huberloss':
-        loss_func = nn.SmoothL1Loss(reduction='mean')
-    elif loss_type == 'Logploss':
-        loss_func = Logploss()
-
-    num_epochs = options.get('num_epochs', 50)
-    run_num = options.get('run_num')
-
-    # parse config dict
-    model_config = config['model_config']
-    model_name = options['model_name']
-
-    target_names = options['target_names']
-
-    if(model_name == 'PE_RelTrf'):
-        annot_embed = options.get('annot_embed')
-        assemb_opt = options.get('assemb_opt')
-        seqlevel_featdim = options.get('seqlevel_featdim')
-
-
-        init_annot_embed = AnnotEmbeder_InitSeq(embed_dim=model_config.embed_dim,
-                                                annot_embed=annot_embed,
-                                                assemb_opt=assemb_opt)
-        mut_annot_embed = AnnotEmbeder_MutSeq(embed_dim=model_config.embed_dim,
-                                              annot_embed=annot_embed,
-                                              assemb_opt=assemb_opt)
-
-        if assemb_opt == 'stack':
-            init_embed_dim = model_config.embed_dim + 3*annot_embed
-            mut_embed_dim = model_config.embed_dim + 2*annot_embed
-            z_dim = np.min([init_embed_dim, mut_embed_dim])//2
-        else:
-            init_embed_dim = model_config.embed_dim
-            mut_embed_dim = model_config.embed_dim
-            z_dim = np.min([init_embed_dim, mut_embed_dim])//2 
-                         
-        init_encoder = RelposTransformer(embed_size=init_embed_dim,
-                                         z_dim=z_dim,
-                                         max_enc_dist=model_config.max_enc_dist,
-                                         num_attn_heads=model_config.num_attn_heads, 
-                                         mlp_embed_factor=model_config.mlp_embed_factor, 
-                                         nonlin_func=model_config.nonlin_func, 
-                                         pdropout=model_config.p_dropout, 
-                                         num_encoder_units=model_config.num_encoder_units,
-                                         multihead_type=model_config.multihead_type,
-                                         tie_Wrpr=model_config.tie_Wrpr)
-        mut_encoder = RelposTransformer(embed_size=mut_embed_dim,
-                                        z_dim=z_dim,
-                                        max_enc_dist=model_config.max_enc_dist,
-                                        num_attn_heads=model_config.num_attn_heads, 
-                                        mlp_embed_factor=model_config.mlp_embed_factor, 
-                                        nonlin_func=model_config.nonlin_func, 
-                                        pdropout=model_config.p_dropout, 
-                                        num_encoder_units=model_config.num_encoder_units,
-                                        multihead_type=model_config.multihead_type,
-                                        tie_Wrpr=model_config.tie_Wrpr)
-
-        local_featemb_init_attn = FeatureEmbAttention(z_dim)
-        local_featemb_mut_attn = FeatureEmbAttention(z_dim)
-        featemb_init_attn = FeatureEmbAttention(z_dim)
-        featemb_mut_attn = FeatureEmbAttention(z_dim)
-
-        seqlevel_featembeder = MLPEmbedder(inp_dim=seqlevel_featdim,
-                                           embed_dim=z_dim,
-                                           mlp_embed_factor=1,
-                                           nonlin_func=model_config.nonlin_func,
-                                           pdropout=model_config.p_dropout, 
-                                           num_encoder_units=1)
-
-        decoder  = MLPDecoder(5*z_dim,
-                              embed_dim=z_dim,
-                              outp_dim=1,
-                              mlp_embed_factor=model_config.mlp_embed_factor,
-                              nonlin_func=model_config.nonlin_func, 
-                              pdropout=model_config.p_dropout, 
-                              num_encoder_units=1, 
-                              infer_sigma=infer_sigma)
-
-        # define optimizer and group parameters
-        models = ((init_annot_embed, 'init_annot_embed'), 
-                  (mut_annot_embed, 'mut_annot_embed'),
-                  (init_encoder, 'init_encoder'),
-                  (mut_encoder, 'mut_encoder'),
-                  (local_featemb_init_attn, 'local_featemb_init_attn'),
-                  (local_featemb_mut_attn, 'local_featemb_mut_attn'),
-                  (featemb_init_attn, 'global_featemb_init_attn'),
-                  (featemb_mut_attn, 'global_featemb_mut_attn'),
-                  (seqlevel_featembeder, 'seqlevel_featembeder'),
-                  (decoder, 'decoder'))
-
-        models_param = []
-        for m, m_name in models:
-            models_param.extend(list(m.parameters()))
-            init_params_(m)
-
-    if(state_dict_dir):  # load state dictionary of saved models
-        for m, m_name in models:
-            m.load_state_dict(torch.load(os.path.join(state_dict_dir, '{}.pkl'.format(m_name)), map_location=device))
-    else:
-        for m, m_name in models:
-            init_params_(m)
-
-    # update models fdtype and move to device
-    for m, m_name in models:
-        m.type(fdtype).to(device)
-
-    if('train' in data_loaders):
-        weight_decay = options.get('weight_decay', 1e-4)
-        # see paper Cyclical Learning rates for Training Neural Networks for parameters' choice
-        # `https://arxive.org/pdf/1506.01186.pdf`
-        # pytorch version >1.1, scheduler should be called after optimizer
-        # for cyclical lr scheduler, it should be called after each batch update
-        num_iter = len(data_loaders['train'])  # num_train_samples/batch_size
-        c_step_size = int(np.ceil(5*num_iter))  # this should be 2-10 times num_iter
-        base_lr = 3e-4
-        max_lr = 5*base_lr  # 3-5 times base_lr
-        optimizer = torch.optim.Adam(models_param, weight_decay=weight_decay, lr=base_lr)
-        cyc_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, 
-                                                          base_lr, 
-                                                          max_lr, 
-                                                          step_size_up=c_step_size,
-                                                          mode='triangular', 
-                                                          cycle_momentum=False)
-
-
-    if ('validation' in data_loaders):
-        m_state_dict_dir = create_directory(os.path.join(wrk_dir, 'model_statedict'))
-
-    if(num_epochs > 1):
-        fig_dir = create_directory(os.path.join(wrk_dir, 'figures'))
-
-    # dump config dictionaries on disk
-    config_dir = create_directory(os.path.join(wrk_dir, 'config'))
-    ReaderWriter.dump_data(config, os.path.join(config_dir, 'mconfig.pkl'))
-    ReaderWriter.dump_data(options, os.path.join(config_dir, 'exp_options.pkl'))
-    # store attention weights for validation and test set
-    seqid_fattnw_map = {dsettype: {} for dsettype in data_loaders if dsettype in {'test'}}
-    mask_gen = MaskGenerator()
-    for epoch in range(num_epochs):
-        # print("-"*35)
-        for dsettype in dsettypes:
-            print("device: {} | experiment_desc: {} | run_num: {} | epoch: {} | dsettype: {} | pid: {}"
-                  "".format(device, options.get('experiment_desc'), run_num, epoch, dsettype, pid))
-            pred_score = []
-            ref_score = []
-            seqs_ids_lst = []
-            data_loader = data_loaders[dsettype]
-
-            epoch_loss = 0.
-
-            if(dsettype == 'train'):  # should be only for train
-                for m, m_name in models:
-                    m.train()
-            else:
-                for m, m_name in models:
-                    m.eval()
-
-            for i_batch, samples_batch in enumerate(tqdm(data_loader)):
-                # print('batch num:', i_batch)
-
-                X_init_nucl, X_init_proto, X_init_pbs, X_init_rt, \
-                X_mut_nucl, X_mut_pbs, X_mut_rt, \
-                x_init_len, x_mut_len, seqlevel_feat, y_val, b_seqs_indx, b_seqs_id = samples_batch
-
-
-                X_init_nucl = X_init_nucl.to(device)
-                X_init_proto = X_init_proto.to(device)
-                X_init_pbs = X_init_pbs.to(device)
-                X_init_rt = X_init_rt.to(device)
-
-                X_mut_nucl = X_mut_nucl.to(device)
-                X_mut_pbs = X_mut_pbs.to(device)
-                X_mut_rt = X_mut_rt.to(device)
-
-                seqlevel_feat = seqlevel_feat.type(fdtype).to(device)
-
-                # zero gradient
-                if(dsettype == 'train'):
-                    optimizer.zero_grad()
-
-                with torch.set_grad_enabled(dsettype == 'train'):
-                    X_init_batch = init_annot_embed(X_init_nucl, X_init_proto, X_init_pbs, X_init_rt)
-                    X_mut_batch = mut_annot_embed(X_mut_nucl, X_mut_pbs, X_mut_rt)
-                    # (bsize,)
-                    y_batch = y_val.type(fdtype).to(device)
-                    # masks (bsize, init_seqlen) or (bsize, mut_seqlen)
-                    x_init_m = mask_gen.create_content_mask((X_init_batch.shape[0], X_init_batch.shape[1]), x_init_len)
-                    x_mut_m =  mask_gen.create_content_mask((X_mut_batch.shape[0], X_mut_batch.shape[1]), x_mut_len)
-                    
-                    x_init_m = x_init_m.to(device)
-                    x_mut_m = x_mut_m.to(device)
-
-                    z_init = init_encoder(X_init_batch, mask=x_init_m)
-                    z_mut =  mut_encoder(X_mut_batch, mask=x_mut_m)
-
-
-                    # max_seg_len = z_init.shape[1]
-                    # # print('z.shape:', z.shape)
-                    # init_mask = x_init_m[:,:max_seg_len].to(device)
-
-
-                    # global attention
-                    # s (bsize, embed_dim)
-                    s_init_global, __ = featemb_init_attn(z_init, mask=x_init_m)
-                    # local attention
-                    s_init_local, __ = local_featemb_init_attn(z_init, mask=X_init_rt)
-
-                    # max_seg_len = z_mut.shape[1]
-                    # mut_mask = x_mut_m[:,:max_seg_len].to(device)
-                    s_mut_global, __ = featemb_mut_attn(z_mut, mask=x_mut_m)
-                    s_mut_local, __ = local_featemb_mut_attn(z_mut, mask=X_mut_rt)
-
-                    seqfeat = seqlevel_featembeder(seqlevel_feat)
-
-                    # bsize, 1
-                    if not infer_sigma:
-                        y_hat_logit = decoder(torch.cat([s_init_global, s_init_local, s_mut_global, s_mut_local, seqfeat], axis=-1))
-                        
-                    else:
-                        y_hat_logit, y_sigma = decoder(torch.cat([s_init_global, s_init_local, s_mut_global, s_mut_local, seqfeat], axis=-1))
-
-                    if loss_type != 'Logploss':
-                        loss = loss_func(y_hat_logit, y_batch)
-                    else:
-                        y_dist = torch.distributions.normal.Normal(y_hat_logit, y_sigma)
-                        loss = loss_func(y_batch, y_dist)
-
-
-                    pred_score.extend(y_hat_logit.view(-1).tolist())
-                    ref_score.extend(y_batch.view(-1).tolist())
-                    seqs_ids_lst.extend(list(b_seqs_id))
-
-                    if(dsettype == 'train'):
-                        # print("computing loss")
-                        # backward step (i.e. compute gradients)
-                        loss.backward()
-                        # optimzer step -- update weights
-                        optimizer.step()
-                        # after each batch step the scheduler
-                        cyc_scheduler.step()
-
-                        # print(optimizer)
-
-                    epoch_loss += loss.item()
-
-            # end of epoch
-            epoch_loss_avgbatch[dsettype].append(epoch_loss/len(data_loader))
-            modelscore = perfmetric_report_cont(pred_score, ref_score, 
-                                                epoch_loss_avgbatch[dsettype][-1], 
-                                                epoch, flog_out[dsettype])
-            perf = modelscore.spearman_corr
-            if(perf > score_dict[dsettype].spearman_corr):
-                score_dict[dsettype] = modelscore
-                if(dsettype == 'validation'):
-                    for m, m_name in models:
-                        torch.save(m.state_dict(), os.path.join(m_state_dict_dir, '{}.pkl'.format(m_name)))
-                if dsettype in {'test', 'validation'}:
-                    predictions_df = build_predictions_df(seqs_ids_lst, ref_score, pred_score, target_names)
-                    predictions_path = os.path.join(wrk_dir, f'predictions_{dsettype}.csv')
-                    predictions_df.to_csv(predictions_path)
-
-    if(num_epochs > 1):
-        for dsettype in epoch_loss_avgbatch:
-            plot_xy(np.arange(num_epochs), 
-                    epoch_loss_avgbatch[dsettype], 
-                    'number of epochs', 
-                    f'{loss_type} loss', 
-                    'epoch batch average loss', 
-                    dsettype,
-                    fig_dir)
-    # dump_scores
-    dump_dict_content(score_dict, list(score_dict.keys()), 'score', wrk_dir)
-
-def run_cont_pe_AbsTrf(data_partition, dsettypes, config, options, wrk_dir, state_dict_dir=None, to_gpu=True, gpu_index=0):
-    pid = "{}".format(os.getpid())  # process id description
-    # get data loader config
-    dataloader_config = config['dataloader_config']
-    cld = construct_load_dataloaders(data_partition, dsettypes, dataloader_config, wrk_dir)
-    # dictionaries by dsettypes
-    data_loaders, epoch_loss_avgbatch, score_dict, flog_out = cld
-
-    device = get_device(to_gpu, gpu_index)  # gpu device
-    fdtype = options['fdtype']
-    loss_type = options.get('loss_func', 'mse')
-
-    if loss_type == 'MSEloss' or loss_type == 'RMSEloss':
-        loss_func = nn.MSELoss(reduction='mean')
-    elif loss_type == 'L1loss':
-        loss_func = nn.L1Loss(reduction='mean')
-    elif loss_type == 'Huberloss':
-        loss_func = nn.SmoothL1Loss(reduction='mean')
-    elif loss_type == 'Logploss':
-        loss_func = Logploss()
-
-    num_epochs = options.get('num_epochs', 50)
-    run_num = options.get('run_num')
-
-    # parse config dict
-    model_config = config['model_config']
-    model_name = options['model_name']
-    target_names = options['target_names']
-
-    if(model_name == 'PE_AbsTrf'):
-        annot_embed = options.get('annot_embed')
-        assemb_opt = options.get('assemb_opt')
-        max_enc_dist = options.get('max_enc_dist')
-
-        init_annot_embed = AnnotEmbeder_InitSeq(embed_dim=model_config.embed_dim,
-                                                annot_embed=annot_embed,
-                                                assemb_opt=assemb_opt)
-        mut_annot_embed = AnnotEmbeder_MutSeq(embed_dim=model_config.embed_dim,
-                                              annot_embed=annot_embed,
-                                              assemb_opt=assemb_opt)
-
-        if assemb_opt == 'stack':
-            init_embed_dim = model_config.embed_dim + 3*annot_embed
-            mut_embed_dim = model_config.embed_dim + 2*annot_embed
-            z_dim = np.min([init_embed_dim, mut_embed_dim])//2
-        else:
-            init_embed_dim = model_config.embed_dim
-            mut_embed_dim = model_config.embed_dim
-            z_dim = np.min([init_embed_dim, mut_embed_dim])//2 
-
-        init_encoder = AbsposTransformer(embed_size=init_embed_dim,
-                                         z_dim=z_dim,
-                                         max_enc_dist=max_enc_dist,
-                                         num_attn_heads=model_config.num_attn_heads, 
-                                         mlp_embed_factor=model_config.mlp_embed_factor, 
-                                         nonlin_func=model_config.nonlin_func, 
-                                         pdropout=model_config.p_dropout, 
-                                         num_encoder_units=model_config.num_encoder_units,
-                                         pos_encoding=model_config.pos_encoding,
-                                         multihead_type=model_config.multihead_type)
-        mut_encoder = AbsposTransformer(embed_size=mut_embed_dim,
-                                        z_dim=z_dim,
-                                        max_enc_dist=max_enc_dist,
-                                        num_attn_heads=model_config.num_attn_heads, 
-                                        mlp_embed_factor=model_config.mlp_embed_factor, 
-                                        nonlin_func=model_config.nonlin_func, 
-                                        pdropout=model_config.p_dropout, 
-                                        num_encoder_units=model_config.num_encoder_units,
-                                        pos_encoding=model_config.pos_encoding,
-                                        multihead_type=model_config.multihead_type)
-
-        local_featemb_init_attn = FeatureEmbAttention(z_dim)
-        local_featemb_mut_attn = FeatureEmbAttention(z_dim)
-        featemb_init_attn = FeatureEmbAttention(z_dim)
-        featemb_mut_attn = FeatureEmbAttention(z_dim)
-
-        seqlevel_featembeder = MLPEmbedder(inp_dim=21, # TODO: figure out how to pass this
-                                           embed_dim=z_dim,
-                                           mlp_embed_factor=1,
-                                           nonlin_func=model_config.nonlin_func,
-                                           pdropout=model_config.p_dropout, 
-                                           num_encoder_units=1)
-
-        decoder  = MLPDecoder(5*z_dim,
-                              embed_dim=z_dim,
-                              outp_dim=1,
-                              mlp_embed_factor=model_config.mlp_embed_factor,
-                              nonlin_func=model_config.nonlin_func, 
-                              pdropout=model_config.p_dropout, 
-                              num_encoder_units=1)
-
-        # define optimizer and group parameters
-        models = ((init_annot_embed, 'init_annot_embed'), 
-                  (mut_annot_embed, 'mut_annot_embed'),
-                  (init_encoder, 'init_encoder'),
-                  (mut_encoder, 'mut_encoder'),
-                  (local_featemb_init_attn, 'local_featemb_init_attn'),
-                  (local_featemb_mut_attn, 'local_featemb_mut_attn'),
-                  (featemb_init_attn, 'global_featemb_init_attn'),
-                  (featemb_mut_attn, 'global_featemb_mut_attn'),
-                  (seqlevel_featembeder, 'seqlevel_featembeder'),
-                  (decoder, 'decoder'))
-
-        models_param = []
-        for m, m_name in models:
-            models_param.extend(list(m.parameters()))
-            init_params_(m)
-
-    if(state_dict_dir):  # load state dictionary of saved models
-        for m, m_name in models:
-            m.load_state_dict(torch.load(os.path.join(state_dict_dir, '{}.pkl'.format(m_name)), map_location=device))
-
-    # update models fdtype and move to device
-    for m, m_name in models:
-        m.type(fdtype).to(device)
-
-    if('train' in data_loaders):
-        weight_decay = options.get('weight_decay', 1e-4)
-        # see paper Cyclical Learning rates for Training Neural Networks for parameters' choice
-        # `https://arxive.org/pdf/1506.01186.pdf`
-        # pytorch version >1.1, scheduler should be called after optimizer
-        # for cyclical lr scheduler, it should be called after each batch update
-        num_iter = len(data_loaders['train'])  # num_train_samples/batch_size
-        c_step_size = int(np.ceil(5*num_iter))  # this should be 2-10 times num_iter
-        base_lr = 3e-4
-        max_lr = 5*base_lr  # 3-5 times base_lr
-        optimizer = torch.optim.Adam(models_param, weight_decay=weight_decay, lr=base_lr)
-        cyc_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, 
-                                                          base_lr, 
-                                                          max_lr, 
-                                                          step_size_up=c_step_size,
-                                                          mode='triangular', 
-                                                          cycle_momentum=False)
-
-
-    if ('validation' in data_loaders):
-        m_state_dict_dir = create_directory(os.path.join(wrk_dir, 'model_statedict'))
-
-    if(num_epochs > 1):
-        fig_dir = create_directory(os.path.join(wrk_dir, 'figures'))
-
-    # dump config dictionaries on disk
-    config_dir = create_directory(os.path.join(wrk_dir, 'config'))
-    ReaderWriter.dump_data(config, os.path.join(config_dir, 'mconfig.pkl'))
-    ReaderWriter.dump_data(options, os.path.join(config_dir, 'exp_options.pkl'))
-    # store attention weights for validation and test set
-    seqid_fattnw_map = {dsettype: {} for dsettype in data_loaders if dsettype in {'test'}}
-    mask_gen = MaskGenerator()
-    for epoch in range(num_epochs):
-        # print("-"*35)
-        for dsettype in dsettypes:
-            print("device: {} | experiment_desc: {} | run_num: {} | epoch: {} | dsettype: {} | pid: {}"
-                  "".format(device, options.get('experiment_desc'), run_num, epoch, dsettype, pid))
-            pred_score = []
-            ref_score = []
-            seqs_ids_lst = []
-            data_loader = data_loaders[dsettype]
-
-            epoch_loss = 0.
-
-            if(dsettype == 'train'):  # should be only for train
-                for m, m_name in models:
-                    m.train()
-            else:
-                for m, m_name in models:
-                    m.eval()
-
-            for i_batch, samples_batch in enumerate(tqdm(data_loader)):
-                # print('batch num:', i_batch)
-
-                X_init_nucl, X_init_proto, X_init_pbs, X_init_rt, \
-                X_mut_nucl, X_mut_pbs, X_mut_rt, \
-                x_init_len, x_mut_len, seqlevel_feat, y_val, b_seqs_indx, b_seqs_id = samples_batch
-
-
-                X_init_nucl = X_init_nucl.to(device)
-                X_init_proto = X_init_proto.to(device)
-                X_init_pbs = X_init_pbs.to(device)
-                X_init_rt = X_init_rt.to(device)
-
-                X_mut_nucl = X_mut_nucl.to(device)
-                X_mut_pbs = X_mut_pbs.to(device)
-                X_mut_rt = X_mut_rt.to(device)
-
-                seqlevel_feat = seqlevel_feat.type(fdtype).to(device)
-
-                # zero gradient
-                if(dsettype == 'train'):
-                    optimizer.zero_grad()
-
-                with torch.set_grad_enabled(dsettype == 'train'):
-                    X_init_batch = init_annot_embed(X_init_nucl, X_init_proto, X_init_pbs, X_init_rt)
-                    X_mut_batch = mut_annot_embed(X_mut_nucl, X_mut_pbs, X_mut_rt)
-                    # (bsize,)
-                    y_batch = y_val.type(fdtype).to(device)
-                    # masks (bsize, init_seqlen) or (bsize, mut_seqlen)
-                    x_init_m = mask_gen.create_content_mask((X_init_batch.shape[0], X_init_batch.shape[1]), x_init_len)
-                    x_mut_m =  mask_gen.create_content_mask((X_mut_batch.shape[0], X_mut_batch.shape[1]), x_mut_len)
-                    
-                    x_init_m = x_init_m.to(device)
-                    x_mut_m = x_mut_m.to(device)
-
-                    z_init = init_encoder(X_init_batch, mask=x_init_m)
-                    z_mut =  mut_encoder(X_mut_batch, mask=x_mut_m)
-
-
-                    # max_seg_len = z_init.shape[1]
-                    # # print('z.shape:', z.shape)
-                    # init_mask = x_init_m[:,:max_seg_len].to(device)
-
-
-                    # global attention
-                    # s (bsize, embed_dim)
-                    s_init_global, __ = featemb_init_attn(z_init, mask=x_init_m)
-                    # local attention
-                    s_init_local, __ = local_featemb_init_attn(z_init, mask=X_init_rt)
-
-                    # max_seg_len = z_mut.shape[1]
-                    # mut_mask = x_mut_m[:,:max_seg_len].to(device)
-                    s_mut_global, __ = featemb_mut_attn(z_mut, mask=x_mut_m)
-                    s_mut_local, __ = local_featemb_mut_attn(z_mut, mask=X_mut_rt)
-
-                    seqfeat = seqlevel_featembeder(seqlevel_feat)
-
-                    # bsize, 1
-                    y_hat_logit, y_sigma = decoder(torch.cat([s_init_global, s_init_local, s_mut_global, s_mut_local, seqfeat], axis=-1))
-
-                    if loss_type != 'Logploss':
-                        loss = loss_func(y_hat_logit, y_batch)
-                    else:
-                        y_dist = torch.distributions.normal.Normal(y_hat_logit, y_sigma)
-                        loss = loss_func(y_batch, y_dist)
-
-
-                    pred_score.extend(y_hat_logit.view(-1).tolist())
-                    ref_score.extend(y_batch.view(-1).tolist())
-                    seqs_ids_lst.extend(list(b_seqs_id))
-
-                    if(dsettype == 'train'):
-                        # print("computing loss")
-                        # backward step (i.e. compute gradients)
-                        loss.backward()
-                        # optimzer step -- update weights
-                        optimizer.step()
-                        # after each batch step the scheduler
-                        cyc_scheduler.step()
-
-                        # print(optimizer)
-
-                    epoch_loss += loss.item()
-
-            # end of epoch
-            epoch_loss_avgbatch[dsettype].append(epoch_loss/len(data_loader))
-            modelscore = perfmetric_report_cont(pred_score, ref_score, 
-                                                epoch_loss_avgbatch[dsettype][-1], 
-                                                epoch, flog_out[dsettype])
-            perf = modelscore.spearman_corr
-            if(perf > score_dict[dsettype].spearman_corr):
-                score_dict[dsettype] = modelscore
-                if(dsettype == 'validation'):
-                    for m, m_name in models:
-                        torch.save(m.state_dict(), os.path.join(m_state_dict_dir, '{}.pkl'.format(m_name)))
-                if dsettype in {'test', 'validation'}:
-                    predictions_df = build_predictions_df(seqs_ids_lst, ref_score, pred_score, target_names)
-                    predictions_path = os.path.join(wrk_dir, f'predictions_{dsettype}.csv')
-                    predictions_df.to_csv(predictions_path)
-
-    if(num_epochs > 1):
-        for dsettype in epoch_loss_avgbatch:
-            plot_xy(np.arange(num_epochs), 
-                    epoch_loss_avgbatch[dsettype], 
-                    'number of epochs', 
-                    f'{loss_type} loss', 
-                    'epoch batch average loss', 
-                    dsettype,
-                    fig_dir)
-    # dump_scores
-    dump_dict_content(score_dict, list(score_dict.keys()), 'score', wrk_dir)
-
-def run_cont_pe_FFT(data_partition, dsettypes, config, options, wrk_dir, state_dict_dir=None, to_gpu=True, gpu_index=0):
-    pid = "{}".format(os.getpid())  # process id description
-    # get data loader config
-    dataloader_config = config['dataloader_config']
-    cld = construct_load_dataloaders(data_partition, dsettypes, dataloader_config, wrk_dir)
-    # dictionaries by dsettypes
-    data_loaders, epoch_loss_avgbatch, score_dict, flog_out = cld
-
-    device = get_device(to_gpu, gpu_index)  # gpu device
-    fdtype = options['fdtype']
-    loss_type = options.get('loss_func', 'mse')
-
-    if loss_type == 'MSEloss' or loss_type == 'RMSEloss':
-        loss_func = nn.MSELoss(reduction='mean')
-    elif loss_type == 'L1loss':
-        loss_func = nn.L1Loss(reduction='mean')
-    elif loss_type == 'Huberloss':
-        loss_func = nn.SmoothL1Loss(reduction='mean')
-    elif loss_type == 'KLDloss':
-        loss_func = nn.KLDivLoss(reduction='batchmean')
-    elif loss_type == 'Logploss':
-        loss_func = Logploss()
-
-    num_epochs = options.get('num_epochs', 50)
-    run_num = options.get('run_num')
-
-    # parse config dict
-    model_config = config['model_config']
-    model_name = options['model_name']
-    tbptt_steps = model_config.max_seq_len
-    split_dim = 1 # sequence dimension
-    target_names = options['target_names']
-    if(model_name == 'PE_FFT'):
-        annot_embed = options.get('annot_embed')
-        assemb_opt = options.get('assemb_opt')
-        print(annot_embed)
-        print(assemb_opt)
-        init_annot_embed = AnnotEmbeder_InitSeq(embed_dim=model_config.embed_dim,
-                                                annot_embed=annot_embed,
-                                                assemb_opt=assemb_opt)
-        mut_annot_embed = AnnotEmbeder_MutSeq(embed_dim=model_config.embed_dim,
-                                              annot_embed=annot_embed,
-                                              assemb_opt=assemb_opt)
-        
-        if assemb_opt == 'stack':
-            init_embed_dim = model_config.embed_dim + 3*annot_embed
-            mut_embed_dim = model_config.embed_dim + 2*annot_embed
-            z_dim = np.min([init_embed_dim, mut_embed_dim])//2
-        else:
-            init_embed_dim = model_config.embed_dim
-            mut_embed_dim = model_config.embed_dim
-            z_dim = np.min([init_embed_dim, mut_embed_dim])//2 
-
-        init_mem_trf = FFTNet(embed_size=init_embed_dim,
-                              z_dim=z_dim,
-                              max_seq_len=model_config.max_seq_len,
-                              mlp_embed_factor=model_config.mlp_embed_factor, 
-                              nonlin_func=model_config.nonlin_func, 
-                              pdropout=model_config.p_dropout, 
-                              num_encoder_units=model_config.num_encoder_units,
-                              pos_encoding=model_config.pos_encoding)
-        mut_mem_trf = FFTNet(embed_size=mut_embed_dim,
-                              z_dim=z_dim,
-                              max_seq_len=model_config.max_seq_len,
-                              mlp_embed_factor=model_config.mlp_embed_factor, 
-                              nonlin_func=model_config.nonlin_func, 
-                              pdropout=model_config.p_dropout, 
-                              num_encoder_units=model_config.num_encoder_units,
-                              pos_encoding=model_config.pos_encoding)
-
-        # cross_attn = SH_Attention(y_dim, y_dim)
-
-        local_featemb_init_attn = FeatureEmbAttention(z_dim)
-        local_featemb_mut_attn = FeatureEmbAttention(z_dim)
-        featemb_init_attn = FeatureEmbAttention(z_dim)
-        featemb_mut_attn = FeatureEmbAttention(z_dim)
-
-        seqlevel_featembeder = MLPEmbedder(inp_dim=21, # TODO: figure out how to pass this
-                                           embed_dim=z_dim,
-                                           mlp_embed_factor=1,
-                                           nonlin_func=model_config.nonlin_func,
-                                           pdropout=model_config.p_dropout, 
-                                           num_encoder_units=1)
-
-        decoder  = MLPDecoder(5*z_dim,
-                              embed_dim=z_dim,
-                              outp_dim=1,
-                              mlp_embed_factor=model_config.mlp_embed_factor,
-                              nonlin_func=model_config.nonlin_func, 
-                              pdropout=model_config.p_dropout, 
-                              num_encoder_units=1)
-
-        # define optimizer and group parameters
-        models = ((init_annot_embed, 'init_annot_embed'), 
-                  (mut_annot_embed, 'mut_annot_embed'),
-                  (init_mem_trf, 'init_encoder'),
-                  (mut_mem_trf, 'mut_encoder'),
-                  (local_featemb_init_attn, 'local_featemb_init_attn'),
-                  (local_featemb_mut_attn, 'local_featemb_mut_attn'),
-                  (featemb_init_attn, 'global_featemb_init_attn'),
-                  (featemb_mut_attn, 'global_featemb_mut_attn'),
-                  (seqlevel_featembeder, 'seqlevel_featembeder'),
-                  (decoder, 'decoder'))
-
-
-        models_param = []
-        for m, m_name in models:
-            models_param.extend(list(m.parameters()))
-            init_params_(m)
-
-    if(state_dict_dir):  # load state dictionary of saved models
-        for m, m_name in models:
-            m.load_state_dict(torch.load(os.path.join(state_dict_dir, '{}.pkl'.format(m_name)), map_location=device))
-
-    # update models fdtype and move to device
-    for m, m_name in models:
-        m.type(fdtype).to(device)
-
-    if('train' in data_loaders):
-        weight_decay = options.get('weight_decay', 1e-4)
-        # see paper Cyclical Learning rates for Training Neural Networks for parameters' choice
-        # `https://arxive.org/pdf/1506.01186.pdf`
-        # pytorch version >1.1, scheduler should be called after optimizer
-        # for cyclical lr scheduler, it should be called after each batch update
-        num_iter = len(data_loaders['train'])  # num_train_samples/batch_size
-        c_step_size = int(np.ceil(5*num_iter))  # this should be 2-10 times num_iter
-        base_lr = 3e-4
-        max_lr = 5*base_lr  # 3-5 times base_lr
-        optimizer = torch.optim.Adam(models_param, weight_decay=weight_decay, lr=base_lr)
-        cyc_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, 
-                                                          base_lr, 
-                                                          max_lr, 
-                                                          step_size_up=c_step_size,
-                                                          mode='triangular', 
-                                                          cycle_momentum=False)
-
-
-    if ('validation' in data_loaders):
-        m_state_dict_dir = create_directory(os.path.join(wrk_dir, 'model_statedict'))
-
-    if(num_epochs > 1):
-        fig_dir = create_directory(os.path.join(wrk_dir, 'figures'))
-
-    # dump config dictionaries on disk
-    config_dir = create_directory(os.path.join(wrk_dir, 'config'))
-    ReaderWriter.dump_data(config, os.path.join(config_dir, 'mconfig.pkl'))
-    ReaderWriter.dump_data(options, os.path.join(config_dir, 'exp_options.pkl'))
-    # store attention weights for validation and test set
-    seqid_fattnw_map = {dsettype: {} for dsettype in data_loaders if dsettype in {'test'}}
-    mask_gen = MaskGenerator()
-
-    for epoch in range(num_epochs):
-        # print("-"*35)
-        for dsettype in dsettypes:
-            print("device: {} | experiment_desc: {} | run_num: {} | epoch: {} | dsettype: {} | pid: {}"
-                  "".format(device, options.get('experiment_desc'), run_num, epoch, dsettype, pid))
-            pred_score = []
-            ref_score = []
-            seqs_ids_lst = []
-            data_loader = data_loaders[dsettype]
-
-            epoch_loss = 0.
-
-            if(dsettype == 'train'):  # should be only for train
-                for m, m_name in models:
-                    m.train()
-            else:
-                for m, m_name in models:
-                    m.eval()
-
-            for i_batch, samples_batch in enumerate(tqdm(data_loader)):
-                # print('batch num:', i_batch)
-
-                X_init_nucl, X_init_proto, X_init_pbs, X_init_rt, \
-                X_mut_nucl, X_mut_pbs, X_mut_rt, \
-                x_init_len, x_mut_len, seqlevel_feat, y_val, b_seqs_indx, b_seqs_id = samples_batch
-
-
-                X_init_nucl = X_init_nucl.to(device)
-                X_init_proto = X_init_proto.to(device)
-                X_init_pbs = X_init_pbs.to(device)
-                X_init_rt = X_init_rt.to(device)
-
-                X_mut_nucl = X_mut_nucl.to(device)
-                X_mut_pbs = X_mut_pbs.to(device)
-                X_mut_rt = X_mut_rt.to(device)
-
-                seqlevel_feat = seqlevel_feat.type(fdtype).to(device)
-
-                # zero gradient
-                if(dsettype == 'train'):
-                    optimizer.zero_grad()
-
-                with torch.set_grad_enabled(dsettype == 'train'):
-                    X_init_batch = init_annot_embed(X_init_nucl, X_init_proto, X_init_pbs, X_init_rt)
-                    X_mut_batch = mut_annot_embed(X_mut_nucl, X_mut_pbs, X_mut_rt)
-                    # (bsize,)
-                    y_batch = y_val.type(fdtype).to(device)
-                    # masks (bsize, init_seqlen) or (bsize, mut_seqlen)
-                    x_init_m = mask_gen.create_content_mask((X_init_batch.shape[0], X_init_batch.shape[1]), x_init_len)
-                    x_mut_m =  mask_gen.create_content_mask((X_mut_batch.shape[0], X_mut_batch.shape[1]), x_mut_len)
-
-                    x_init_m_exp = x_init_m.unsqueeze(-1).expand(x_init_m.shape[0], x_init_m.shape[1], X_init_batch.shape[2]).to(device)
-                    z_init = init_mem_trf(X_init_batch*x_init_m_exp)
-                    x_mut_m_exp = x_mut_m.unsqueeze(-1).expand(x_mut_m.shape[0], x_mut_m.shape[1], X_mut_batch.shape[2]).to(device)
-                    z_mut =  mut_mem_trf(X_mut_batch*x_mut_m_exp)
-        
-                    max_seg_len = z_init.shape[1]
-                    # print('z.shape:', z.shape)
-                    init_mask = x_init_m[:,:max_seg_len].to(device)
-                    # global attention
-                    # s (bsize, embed_dim)
-                    s_init_global, __ = featemb_init_attn(z_init, mask=init_mask)
-                    # local attention
-                    s_init_local, __ = local_featemb_init_attn(z_init, mask=X_init_rt[:,:max_seg_len])
-
-                    max_seg_len = z_mut.shape[1]
-                    mut_mask = x_mut_m[:,:max_seg_len].to(device)
-                    s_mut_global, __ = featemb_mut_attn(z_mut, mask=mut_mask)
-                    s_mut_local, __ = local_featemb_mut_attn(z_mut, mask=X_mut_rt[:,:max_seg_len])
-
-                    seqfeat = seqlevel_featembeder(seqlevel_feat)
-
-                    # bsize, 1
-                    y_hat_logit, y_sigma = decoder(torch.cat([s_init_global, s_init_local, s_mut_global, s_mut_local, seqfeat], axis=-1))
-
-                    if loss_type != 'Logploss':
-                        loss = loss_func(y_hat_logit, y_batch)
-                    else:
-                        y_dist = torch.distributions.normal.Normal(y_hat_logit, y_sigma)
-                        loss = loss_func(y_batch, y_dist)
-
-
-                    pred_score.extend(y_hat_logit.view(-1).tolist())
-                    ref_score.extend(y_batch.view(-1).tolist())
-                    seqs_ids_lst.extend(list(b_seqs_id))
-
-                    if(dsettype == 'train'):
-                        # print("computing loss")
-                        # backward step (i.e. compute gradients)
-                        loss.backward()
-                        # optimzer step -- update weights
-                        optimizer.step()
-                        # after each batch step the scheduler
-                        cyc_scheduler.step()
-
-                        # print(optimizer)
-
-                    epoch_loss += loss.item()
-
-            # end of epoch
-            epoch_loss_avgbatch[dsettype].append(epoch_loss/len(data_loader))
-            modelscore = perfmetric_report_cont(pred_score, ref_score, 
-                                                epoch_loss_avgbatch[dsettype][-1], 
-                                                epoch, flog_out[dsettype])
-            perf = modelscore.spearman_corr
-            if(perf > score_dict[dsettype].spearman_corr):
-                score_dict[dsettype] = modelscore
-                if(dsettype == 'validation'):
-                    for m, m_name in models:
-                        torch.save(m.state_dict(), os.path.join(m_state_dict_dir, '{}.pkl'.format(m_name)))
-                if dsettype in {'test', 'validation'}:
-                    predictions_df = build_predictions_df(seqs_ids_lst, ref_score, pred_score, target_names)
-                    predictions_path = os.path.join(wrk_dir, f'predictions_{dsettype}.csv')
-                    predictions_df.to_csv(predictions_path)
-
-    if(num_epochs > 1):
-        for dsettype in epoch_loss_avgbatch:
-            plot_xy(np.arange(num_epochs), 
-                    epoch_loss_avgbatch[dsettype], 
-                    'number of epochs', 
-                    f'{loss_type} loss', 
-                    'epoch batch average loss', 
-                    dsettype,
-                    fig_dir)
-    # dump_scores
-    dump_dict_content(score_dict, list(score_dict.keys()), 'score', wrk_dir)
-
-
-def run_cont_pe_RNN(data_partition, dsettypes, config, options, wrk_dir, state_dict_dir=None, to_gpu=True, gpu_index=0):
-    pid = "{}".format(os.getpid())  # process id description
-    # get data loader config
-    dataloader_config = config['dataloader_config']
-    cld = construct_load_dataloaders(data_partition, dsettypes, dataloader_config, wrk_dir)
-    # dictionaries by dsettypes
-    data_loaders, epoch_loss_avgbatch, score_dict, flog_out = cld
-
-    device = get_device(to_gpu, gpu_index)  # gpu device
-    fdtype = options['fdtype']
-    loss_type = options.get('loss_func', 'mse')
-
-    if loss_type == 'MSEloss' or loss_type == 'RMSEloss':
-        loss_func = nn.MSELoss(reduction='mean')
-    elif loss_type == 'L1loss':
-        loss_func = nn.L1Loss(reduction='mean')
-    elif loss_type == 'Huberloss':
-        loss_func = nn.SmoothL1Loss(reduction='mean')
-    elif loss_type == 'Logploss':
-        loss_func = Logploss() # by default it is reduction='mean'
- 
-
-    num_epochs = options.get('num_epochs', 50)
-    run_num = options.get('run_num')
-    # parse config dict
-    model_config = config['model_config']
-    model_name = options['model_name']
-    
-    target_names = ['averageedited', 'averageunedited', 'averageindel']
-    target_outcome = options.get('target_outcome')
-    outcome_indx = target_names.index(target_outcome)
-
-    if(model_name == 'PE_RNN'):
-        annot_embed = options.get('annot_embed')
-        assemb_opt = options.get('assemb_opt')
-        seqlevel_featdim = options.get('seqlevel_featdim')
-
-        init_annot_embed = AnnotEmbeder_InitSeq(embed_dim=model_config.embed_dim,
-                                                annot_embed=annot_embed,
-                                                assemb_opt=assemb_opt)
-        mut_annot_embed = AnnotEmbeder_MutSeq(embed_dim=model_config.embed_dim,
-                                              annot_embed=annot_embed,
-                                              assemb_opt=assemb_opt)
-        if assemb_opt == 'stack':
-            init_embed_dim = model_config.embed_dim + 3*annot_embed
-            mut_embed_dim = model_config.embed_dim + 2*annot_embed
-            z_dim = np.min([init_embed_dim, mut_embed_dim])//2
-        else:
-            init_embed_dim = model_config.embed_dim
-            mut_embed_dim = model_config.embed_dim
-            z_dim = np.min([init_embed_dim, mut_embed_dim])//2 
-
-        init_encoder = RNN_Net(input_dim =init_embed_dim,
-                              hidden_dim=model_config.embed_dim,
-                              z_dim=z_dim,
-                              device=device,
-                              num_hiddenlayers=model_config.num_hidden_layers,
-                              bidirection=model_config.bidirection,
-                              rnn_pdropout=model_config.p_dropout,
-                              rnn_class=model_config.rnn_class,
-                              nonlinear_func=model_config.nonlin_func,
-                              fdtype=fdtype)
-        mut_encoder= RNN_Net(input_dim =mut_embed_dim,
-                              hidden_dim=model_config.embed_dim,
-                              z_dim=z_dim,
-                              device=device,
-                              num_hiddenlayers=model_config.num_hidden_layers,
-                              bidirection=model_config.bidirection,
-                              rnn_pdropout=model_config.p_dropout,
-                              rnn_class=model_config.rnn_class,
-                              nonlinear_func=model_config.nonlin_func,
-                              fdtype=fdtype)
-
-        local_featemb_init_attn = FeatureEmbAttention(z_dim)
-        local_featemb_mut_attn = FeatureEmbAttention(z_dim)
-
-        global_featemb_init_attn = FeatureEmbAttention(z_dim)
-        global_featemb_mut_attn = FeatureEmbAttention(z_dim)
-
-        seqlevel_featembeder = MLPEmbedder(inp_dim=seqlevel_featdim,
-                                           embed_dim=z_dim,
-                                           mlp_embed_factor=1,
-                                           nonlin_func=model_config.nonlin_func,
-                                           pdropout=model_config.p_dropout, 
-                                           num_encoder_units=1)
-
-        decoder  = MLPDecoder(5*z_dim,
-                              embed_dim=z_dim,
-                              outp_dim=1,
-                              mlp_embed_factor=2,
-                              nonlin_func=model_config.nonlin_func, 
-                              pdropout=model_config.p_dropout, 
-                              num_encoder_units=1)
-
-        # define optimizer and group parameters
-        models = ((init_annot_embed, 'init_annot_embed'), 
-                  (mut_annot_embed, 'mut_annot_embed'),
-                  (init_encoder, 'init_encoder'),
-                  (mut_encoder, 'mut_encoder'),
-                  (local_featemb_init_attn, 'local_featemb_init_attn'),
-                  (local_featemb_mut_attn, 'local_featemb_mut_attn'),
-                  (global_featemb_init_attn, 'global_featemb_init_attn'),
-                  (global_featemb_mut_attn, 'global_featemb_mut_attn'),
-                  (seqlevel_featembeder, 'seqlevel_featembeder'),
-                  (decoder, 'decoder'))
-        models_param = []
-        for m, m_name in models:
-            models_param.extend(list(m.parameters()))
-            init_params_(m)
-
-    if(state_dict_dir):  # load state dictionary of saved models
-        for m, m_name in models:
-            m.load_state_dict(torch.load(os.path.join(state_dict_dir, '{}.pkl'.format(m_name)), map_location=device))
-
-    # update models fdtype and move to device
-    for m, m_name in models:
-        m.type(fdtype).to(device)
-
-    if('train' in data_loaders):
-        weight_decay = options.get('weight_decay', 1e-4)
-        # see paper Cyclical Learning rates for Training Neural Networks for parameters' choice
-        # `https://arxive.org/pdf/1506.01186.pdf`
-        # pytorch version >1.1, scheduler should be called after optimizer
-        # for cyclical lr scheduler, it should be called after each batch update
-        num_iter = len(data_loaders['train'])  # num_train_samples/batch_size
-        c_step_size = int(np.ceil(5*num_iter))  # this should be 2-10 times num_iter
-        base_lr = 3e-4
-        max_lr = 5*base_lr  # 3-5 times base_lr
-        optimizer = torch.optim.Adam(models_param, weight_decay=weight_decay, lr=base_lr)
-        cyc_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, 
-                                                          base_lr, 
-                                                          max_lr, 
-                                                          step_size_up=c_step_size,
-                                                          mode='triangular', 
-                                                          cycle_momentum=False)
-
-
-    if ('validation' in data_loaders):
-        m_state_dict_dir = create_directory(os.path.join(wrk_dir, 'model_statedict'))
-
-    if(num_epochs > 1):
-        fig_dir = create_directory(os.path.join(wrk_dir, 'figures'))
-
-    # dump config dictionaries on disk
-    config_dir = create_directory(os.path.join(wrk_dir, 'config'))
-    ReaderWriter.dump_data(config, os.path.join(config_dir, 'mconfig.pkl'))
-    ReaderWriter.dump_data(options, os.path.join(config_dir, 'exp_options.pkl'))
-    # store attention weights for validation and test set
-    seqid_fattnw_map = {dsettype: {} for dsettype in data_loaders if dsettype in {'test'}}
-    mask_gen = MaskGenerator()
-    print('updated!!')
-    for epoch in range(num_epochs):
-        # print("-"*35)
-        for dsettype in dsettypes:
-            print("device: {} | experiment_desc: {} | run_num: {} | epoch: {} | dsettype: {} | pid: {}"
-                  "".format(device, options.get('experiment_desc'), run_num, epoch, dsettype, pid))
-            pred_score = []
-            ref_score = []
-            seqs_ids_lst = []
-            data_loader = data_loaders[dsettype]
-
-            epoch_loss = 0.
-
-            if(dsettype == 'train'):  # should be only for train
-                for m, m_name in models:
-                    m.train()
-                requires_grad=True
-            else:
-                for m, m_name in models:
-                    m.eval()
-                requires_grad = False
-
-            for i_batch, samples_batch in enumerate(tqdm(data_loader)):
-                # print('batch num:', i_batch)
-
-                X_init_nucl, X_init_proto, X_init_pbs, X_init_rt, \
-                X_mut_nucl, X_mut_pbs, X_mut_rt, \
-                x_init_len, x_mut_len, seqlevel_feat, \
-                y_val, b_seqs_indx, b_seqs_id = samples_batch
-
-
-                X_init_nucl = X_init_nucl.to(device)
-                X_init_proto = X_init_proto.to(device)
-                X_init_pbs = X_init_pbs.to(device)
-                X_init_rt = X_init_rt.to(device)
-
-                X_mut_nucl = X_mut_nucl.to(device)
-                X_mut_pbs = X_mut_pbs.to(device)
-                X_mut_rt = X_mut_rt.to(device)
-                seqlevel_feat = seqlevel_feat.type(fdtype).to(device)
-                
-                with torch.set_grad_enabled(dsettype == 'train'):
-                    X_init_batch = init_annot_embed(X_init_nucl, X_init_proto, X_init_pbs, X_init_rt)
-                    X_mut_batch = mut_annot_embed(X_mut_nucl, X_mut_pbs, X_mut_rt)
-                    # print('X_init_batch.shape:', X_init_batch.shape)
-                    # print('X_mut_batch.shape:',X_mut_batch.shape)
-                    # print('x_init_len.shape', x_init_len.shape)
-                    # print('x_mut_len.shape:', x_mut_len.shape)
-
-                    # print(np.unique(x_init_len))
-                    # print(np.unique(x_mut_len))
-                    # (bsize,)
-                    y_batch = 100*y_val.type(fdtype).to(device)[:, outcome_indx]
-                    
-                    # masks (bsize, init_seqlen) or (bsize, mut_seqlen)
-                    x_init_m = mask_gen.create_content_mask((X_init_batch.shape[0], X_init_batch.shape[1]), x_init_len)
-                    x_mut_m =  mask_gen.create_content_mask((X_mut_batch.shape[0], X_mut_batch.shape[1]), x_mut_len)
-
-                    __, z_init = init_encoder.forward_complete(X_init_batch, x_init_len, requires_grad=requires_grad)
-                    __, z_mut =  mut_encoder.forward_complete(X_mut_batch, x_mut_len, requires_grad=requires_grad)
-        
-                    max_seg_len = z_init.shape[1]
-                    init_mask = x_init_m[:,:max_seg_len].to(device)
-                    # global attention
-                    # s (bsize, embed_dim)
-                    s_init_global, __ = global_featemb_init_attn(z_init, mask=init_mask)
-                    # local attention
-                    s_init_local, __ = local_featemb_init_attn(z_init, mask=X_init_rt[:,:max_seg_len])
-
-                    max_seg_len = z_mut.shape[1]
-                    mut_mask = x_mut_m[:,:max_seg_len].to(device)
-                    s_mut_global, __ = global_featemb_mut_attn(z_mut, mask=mut_mask)
-                    s_mut_local, __ = local_featemb_mut_attn(z_mut, mask=X_mut_rt[:,:max_seg_len])
-
-                    seqfeat = seqlevel_featembeder(seqlevel_feat)
-                    # y (bsize, 1)
-                    # y_hat_logit, y_sigma = decoder(torch.cat([s_init_global, s_init_local, s_mut_global, s_mut_local, seqfeat], axis=-1))
-                    
-                    y_hat_logit = decoder(torch.cat([s_init_global, s_init_local, s_mut_global, s_mut_local, seqfeat], axis=-1))
-
-                    loss = loss_func(y_batch, y_hat_logit)
-
-                    # if loss_type != 'Logploss':
-                    #     loss = loss_func(y_batch, y_hat_logit)
-                    # else:
-                    #     y_dist = torch.distributions.normal.Normal(y_hat_logit, y_sigma)
-                    #     loss = loss_func(y_batch, y_dist)
-
-                    if(dsettype == 'train'):
-                        # zero gradient
-                        optimizer.zero_grad()
-                        # print("computing loss")
-                        # backward step (i.e. compute gradients)
-                        loss.backward()
-                        # optimzer step -- update weights
-                        optimizer.step()
-                        # after each batch step the scheduler
-                        cyc_scheduler.step()
-
-                        # print(optimizer)
-
-                    pred_score.extend(y_hat_logit.view(-1).tolist())
-                    ref_score.extend(y_batch.view(-1).tolist())
-                    seqs_ids_lst.extend(list(b_seqs_id))
-
-                    epoch_loss += loss.item()
-
-            # end of epoch
-            epoch_loss_avgbatch[dsettype].append(epoch_loss/len(data_loader))
-            modelscore = perfmetric_report_cont(pred_score, ref_score, 
-                                                epoch_loss_avgbatch[dsettype][-1], 
-                                                epoch, flog_out[dsettype])
-            perf = modelscore.spearman_corr
-            if(perf > score_dict[dsettype].spearman_corr):
-                score_dict[dsettype] = modelscore
-                if(dsettype == 'validation'):
-                    for m, m_name in models:
-                        torch.save(m.state_dict(), os.path.join(m_state_dict_dir, '{}.pkl'.format(m_name)))
-                if dsettype in {'test', 'validation'}:
-                    predictions_df = build_predictions_df(seqs_ids_lst, ref_score, pred_score, target_names)
-                    predictions_path = os.path.join(wrk_dir, f'predictions_{dsettype}.csv')
-                    predictions_df.to_csv(predictions_path)
-
-    if(num_epochs > 1):
-        for dsettype in epoch_loss_avgbatch:
-            plot_xy(np.arange(num_epochs), 
-                    epoch_loss_avgbatch[dsettype], 
-                    'number of epochs', 
-                    f'{loss_type} loss', 
-                    'epoch batch average loss', 
-                    dsettype,
-                    fig_dir)
-    # dump_scores
-    dump_dict_content(score_dict, list(score_dict.keys()), 'score', wrk_dir)
 
 
 def run_cont_pe_RNN_distribution(data_partition, dsettypes, config, options, wrk_dir, state_dict_dir=None, to_gpu=True, gpu_index=0):
@@ -1856,8 +370,6 @@ def run_cont_pe_RNN_distribution(data_partition, dsettypes, config, options, wrk
         loss_func = nn.SmoothL1Loss(reduction='mean')
     elif loss_type == 'KLDloss':
         loss_func = nn.KLDivLoss(reduction='none')
-    elif loss_type == 'Logploss':
-        loss_func = Logploss()
     elif loss_type == 'CEloss':
         loss_func = CELoss(reduction='none')
     
@@ -2162,8 +674,6 @@ def run_cont_pe_RNN_distribution_multidata(data_partition, dsettypes, config, op
         loss_func = nn.SmoothL1Loss(reduction='none')
     elif loss_type == 'KLDloss':
         loss_func = nn.KLDivLoss(reduction='none')
-    elif loss_type == 'Logploss':
-        loss_func = Logploss()
     elif loss_type == 'CEloss':
         loss_func = CELoss(reduction='none')
     elif loss_type == 'BalancedMSEloss':
@@ -2653,8 +1163,6 @@ def run_tune_cont_pe_RNN_distribution_multidata(data_partition, dsettypes, confi
         loss_func = nn.SmoothL1Loss(reduction='mean')
     elif loss_type == 'KLDloss':
         loss_func = nn.KLDivLoss(reduction='none')
-    elif loss_type == 'Logploss':
-        loss_func = Logploss()
     elif loss_type == 'CEloss':
         loss_func = CELoss(reduction='none')
         print('loss_type:', loss_type)
@@ -3087,8 +1595,7 @@ def run_tune_cont_pe_RNN_kldiv(data_partition, dsettypes, config, options, wrk_d
         loss_func = nn.SmoothL1Loss(reduction='mean')
     elif loss_type == 'KLDloss':
         loss_func = nn.KLDivLoss(reduction='none')
-    elif loss_type == 'Logploss':
-        loss_func = Logploss()
+
 
     num_epochs = options.get('num_epochs', 50)
     run_num = options.get('run_num')
@@ -3463,56 +1970,8 @@ def train_val_run(datatensor_partitions, config_map, train_val_dir, run_gpu_map,
             
             print('state_dict_pth:', state_dict_pth)
 
-        if options.get('model_name') == 'PE_MemTrf':
-            run_cont_pe_MemTrf(data_partition, 
-                               dsettypes, 
-                               mconfig, 
-                               options, 
-                               wrk_dir,
-                               state_dict_dir=None,
-                               to_gpu=True, 
-                               gpu_index=run_gpu_map[run_num])
-        elif options.get('model_name') == 'PE_FFT':
-            run_cont_pe_FFT(data_partition, 
-                               dsettypes, 
-                               mconfig, 
-                               options, 
-                               wrk_dir,
-                               state_dict_dir=None,
-                               to_gpu=True, 
-                               gpu_index=run_gpu_map[run_num])
-        elif options.get('model_name') == 'PE_RNN':
-            run_cont_pe_RNN(data_partition, 
-                               dsettypes, 
-                               mconfig, 
-                               options, 
-                               wrk_dir,
-                               state_dict_dir=None,
-                               to_gpu=True, 
-                               gpu_index=run_gpu_map[run_num])
-
-        elif options.get('model_name') == 'PE_RNN_distribution':
+        if options.get('model_name') == 'PE_RNN_distribution':
             run_cont_pe_RNN_distribution(data_partition, 
-                               dsettypes, 
-                               mconfig, 
-                               options, 
-                               wrk_dir,
-                               state_dict_dir=None,
-                               to_gpu=True, 
-                               gpu_index=run_gpu_map[run_num])
-
-        elif options.get('model_name') == 'PE_RelTrf':
-            run_cont_pe_RelTrf(data_partition, 
-                               dsettypes, 
-                               mconfig, 
-                               options, 
-                               wrk_dir,
-                               state_dict_dir=None,
-                               to_gpu=True, 
-                               gpu_index=run_gpu_map[run_num])
-
-        elif options.get('model_name') == 'PE_AbsTrf':
-            run_cont_pe_AbsTrf(data_partition, 
                                dsettypes, 
                                mconfig, 
                                options, 
@@ -3537,37 +1996,8 @@ def test_run(datatensor_partitions, config_map, train_val_dir, test_dir, run_gpu
             path = os.path.join(test_dir, 'test', 'run_{}'.format(run_num))
             test_wrk_dir = create_directory(path)
 
-            if options.get('model_name') == 'PE_MemTrf':
-                run_cont_pe_MemTrf(data_partition, 
-                                   dsettypes, 
-                                   mconfig, 
-                                   options, 
-                                   test_wrk_dir,
-                                   state_dict_dir=state_dict_pth, 
-                                   to_gpu=True, 
-                                   gpu_index=run_gpu_map[run_num])
                 
-            elif options.get('model_name') == 'PE_FFT':
-                run_cont_pe_FFT(data_partition, 
-                                   dsettypes, 
-                                   mconfig, 
-                                   options, 
-                                   test_wrk_dir,
-                                   state_dict_dir=state_dict_pth, 
-                                   to_gpu=True, 
-                                   gpu_index=run_gpu_map[run_num])
-                
-            elif options.get('model_name') == 'PE_RNN':
-                run_cont_pe_RNN(data_partition, 
-                                   dsettypes, 
-                                   mconfig, 
-                                   options, 
-                                   test_wrk_dir,
-                                   state_dict_dir=state_dict_pth, 
-                                   to_gpu=True, 
-                                   gpu_index=run_gpu_map[run_num])
-                
-            elif options.get('model_name') == 'PE_RNN_distribution':
+            if options.get('model_name') == 'PE_RNN_distribution':
                 run_cont_pe_RNN_distribution(data_partition, 
                                    dsettypes, 
                                    mconfig, 
@@ -3577,25 +2007,6 @@ def test_run(datatensor_partitions, config_map, train_val_dir, test_dir, run_gpu
                                    to_gpu=True, 
                                    gpu_index=run_gpu_map[run_num])
                             
-            elif options.get('model_name') == 'PE_RelTrf':
-                run_cont_pe_RelTrf(data_partition, 
-                                   dsettypes, 
-                                   mconfig, 
-                                   options, 
-                                   test_wrk_dir,
-                                   state_dict_dir=state_dict_pth, 
-                                   to_gpu=True, 
-                                   gpu_index=run_gpu_map[run_num])
-
-            elif options.get('model_name') == 'PE_AbsTrf':
-                run_cont_pe_AbsTrf(data_partition, 
-                                   dsettypes, 
-                                   mconfig, 
-                                   options, 
-                                   test_wrk_dir,
-                                   state_dict_dir=state_dict_pth, 
-                                   to_gpu=True, 
-                                   gpu_index=run_gpu_map[run_num])
         else:
             print('WARNING: train dir not found: {}'.format(path))
 
