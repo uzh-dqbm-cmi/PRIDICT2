@@ -4,22 +4,22 @@
 
 ## Overview
 
-`PRIDICT2.0` is an advanced version of the original [PRIDICT](https://rdcu.be/c3IM5) model designed for predicting the efficiency of prime editing guide RNAs. This repository allows you to run the model locally. For details on advancements over the original model, refer to our [publication](xxx).
+`PRIDICT2.0` is an advanced version of the original [PRIDICT](https://rdcu.be/c3IM5) model designed for predicting the efficiency of prime editing guide RNAs. This repository allows you to run the model locally. For details on advancements over the original model, refer to our [publication](https://pridict.it).
 
 ## Complementary Model
 
-- **ePRIDICT**: This model focuses on the influence of local chromatin context (K562) on prime editing efficiencies and is designed to complement PRIDICT2.0. [Access GitHub Repository](https://github.com/Schwank-Lab/epridict)
+- **ePRIDICT**: This model focuses on the influence of local chromatin context (K562) on prime editing efficiencies and is designed to complement PRIDICT2.0. [Access ePRIDICT GitHub Repository](https://github.com/Schwank-Lab/epridict)
 
 ## Resources
 
-- **Supplementary Files**: [Access Here](xxx)
+- **Supplementary Files**: [Access Here](https://github.com/Schwank-Lab/epridict/tree/supplementary_files)
 - **Web Application**: For an online version of PRIDICT2.0, visit [our webapp](https://pridict.it/).
 
 ## Contact
 
 For questions or suggestions, please either:
-- Email us at [nicolas.mathis@pharma.uzh.ch](mailto:nicolas.mathis@pharma.uzh.ch)
-- Open a GitHub issue
+- Write us an [email](mailto:nicolas.mathis@pharma.uzh.ch)
+- Open a [GitHub issue](https://github.com/uzh-dqbm-cmi/PRIDICT2/issues)
 
 
 
