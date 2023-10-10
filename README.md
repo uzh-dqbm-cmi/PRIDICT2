@@ -4,11 +4,11 @@
 
 ## Overview
 
-`PRIDICT2.0` is an advanced version of the original [PRIDICT](https://rdcu.be/c3IM5) model designed for predicting the efficiency of prime editing guide RNAs. This repository allows you to run the model locally. For details on advancements over the original model, refer to our [publication](https://pridict.it).
+[PRIDICT2.0](https://www.biorxiv.org/content/10.1101/2023.10.09.561414v1) is an advanced version of the original [PRIDICT](https://rdcu.be/c3IM5) model designed for predicting the efficiency of prime editing guide RNAs. This repository allows you to run the model locally. For details on advancements over the original model, refer to our [BioRxiv preprint](https://www.biorxiv.org/content/10.1101/2023.10.09.561414v1).
 
 ## Complementary Model
 
-- **ePRIDICT**: This model focuses on the influence of local chromatin context (K562) on prime editing efficiencies and is designed to complement PRIDICT2.0. [Access ePRIDICT GitHub Repository](https://github.com/Schwank-Lab/epridict)
+- **ePRIDICT**: This model focuses on the influence of local chromatin context (K562) on prime editing efficiencies and is designed to complement PRIDICT2.0. [Access GitHub Repository](https://github.com/Schwank-Lab/epridict)
 
 ## Resources
 
@@ -18,8 +18,14 @@
 ## Contact
 
 For questions or suggestions, please either:
-- Write us an [email](mailto:nicolas.mathis@pharma.uzh.ch)
-- Open a [GitHub issue](https://github.com/uzh-dqbm-cmi/PRIDICT2/issues)
+- Email us at [nicolas.mathis@pharma.uzh.ch](mailto:nicolas.mathis@pharma.uzh.ch)
+- Open a GitHub issue
+
+## Citation
+
+If find our work useful for your research please cite:
+- [Mathis et al., BioRxiv, 2023](https://www.biorxiv.org/content/10.1101/2023.10.09.561414v1) (PRIDICT2.0)
+- [Mathis & Allam et al., Nature Biotechnology, 2023](https://rdcu.be/c3IM5) (PRIDICT)
 
 
 
