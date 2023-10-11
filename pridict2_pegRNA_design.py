@@ -307,7 +307,7 @@ def deeppridict(pegdataframe, models_lst_dict):
                   'edited_base_mt_nan']
 
     deepdf = pegdataframe[deepdfcols].copy()
-    deepdf.insert(1, 'seq_id', range(len(deepdf)))
+    deepdf.insert(1, 'seq_id', list(range(len(deepdf))))
     deepdf['protospacerlocation_only_initial'] = deepdf['protospacerlocation_only_initial'].apply(lambda x: str(x))
     deepdf['PBSlocation'] = deepdf['PBSlocation'].apply(lambda x: str(x))
     deepdf['RT_initial_location'] = deepdf['RT_initial_location'].apply(lambda x: str(x))
@@ -326,6 +326,8 @@ def deeppridict(pegdataframe, models_lst_dict):
     batch_size = int(1500/len(cell_types))
 
     prieml_model = get_prieml_model_template()
+
+    # print('deepdf[seq_id]:\n', deepdf['seq_id'])
     # data processing for the same data can be done once given that we already specified the cell_types a priori
     dloader = prieml_model.prepare_data(deepdf, 
                                         None, # since we are specifying cell types model_name can be ignored
@@ -346,12 +348,14 @@ def deeppridict(pegdataframe, models_lst_dict):
             pred_df['run_num'] = runs_c # this is irrelevant as we will average at the end
             pred_dfs.append(pred_df) # Append the prediction dataframe to the list
             runs_c += 1
+            # print('pred_df:\n', pred_df)
         # compuate average prediction across runs
         pred_df_allruns = pd.concat(pred_dfs, axis=0, ignore_index=True)
         avg_preds = prieml_model.compute_avg_predictions(pred_df_allruns)
         avg_preds['model'] = model_id
         # store the average prediction dataframe in for a specified model in a dictionary
         all_avg_preds[model_id] = avg_preds
+    # print('all_avg_predicitons:\n', all_avg_preds)
     return all_avg_preds
 
 
@@ -869,10 +873,13 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
         # seq_id, dataset_name, model, predictions cols
         tmp_df = pd.concat(tmp, axis=0, ignore_index=True)
         agg_df = compute_average_predictions(tmp_df, grp_cols=['seq_id', 'dataset_name'])
+        # print('agg_df:\n', agg_df)
         for cell_type in cell_types:
             cond  = agg_df['dataset_name'] == cell_type
             avg_edited_eff = agg_df.loc[cond, 'pred_averageedited'].values*100
             pegdataframe.insert(len(pegdataframe.columns), f'PRIDICT2_0_editing_Score_deep_{cell_type}', avg_edited_eff)
+        # print('pegdataframe:\n', pegdataframe)
+        
 
         def find_closest_percentile(value, ref_column, percentile_column):
             closest_index = np.abs(ref_column - value).idxmin()
@@ -913,7 +920,8 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
         queue.put(pindx)
 
 def compute_average_predictions(df, grp_cols=['seq_id', 'dataset_name']):
-    agg_df = df.groupby(by=grp_cols).mean()
+    tcols = ['pred_averageedited', 'pred_averageunedited', 'pred_averageindel']
+    agg_df = df.groupby(by=grp_cols)[tcols].mean()
     agg_df.reset_index(inplace=True)
     for colname in ('run_num', 'Unnamed: 0', 'model'):
         if colname in agg_df:

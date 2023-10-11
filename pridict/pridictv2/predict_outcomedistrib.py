@@ -484,7 +484,7 @@ class PRIEML_Model:
                         pred_score.extend(torch.exp(y_hat_logit).tolist())
 
 
-                    seqs_ids_lst.extend(list(b_seqs_id))
+                    seqs_ids_lst.extend(b_seqs_id.tolist())
                     dataset_ids_lst.extend([datasets_name_lst[i_data]]*len(b_seqs_id))
 
  

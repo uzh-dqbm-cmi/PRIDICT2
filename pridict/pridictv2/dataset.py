@@ -340,7 +340,7 @@ def create_datatensor(data_df, proc_seq_init_df, num_init_cols,  proc_seq_mut_df
         X_mut_pbs = extend_matrix(X_mut_pbs, ext_mat_shape, blank_pbs_annot_token)
         X_mut_rt = extend_matrix(X_mut_rt, ext_mat_shape, blank_annot_token)
     else:
-        print('we have aligned initial and mutated sequences!')
+        print('--- aligned initial and mutated sequences ---')
 
     seq_ids = data_df['seq_id'].values
     indx_seqid_map = {i:seq_ids[i] for i in range(len(seq_ids))}
