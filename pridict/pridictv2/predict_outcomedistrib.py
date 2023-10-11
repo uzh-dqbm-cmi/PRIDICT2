@@ -554,6 +554,10 @@ class PRIEML_Model:
 
         return pred_df
 
+    def predict_from_dloader_using_loaded_models(self, dloader, models, y_ref=[]):
+        pred_df = self._run_prediction(models, dloader, y_ref=y_ref)
+        return pred_df
+
     def compute_avg_predictions(self, df):
         grp_cols = ['seq_id']
         if 'dataset_name' in df:

@@ -2,24 +2,6 @@ import torch
 from torch import nn
 
 
-class Logploss(nn.Module):
-    def __init__(self, reduction='mean'):
-        super().__init__()
-        self.reduction = reduction
-
-    def forward(self, y, y_dist):
-        """
-        Args:
-            y: tensor, (bsize, ydim)
-            y_dist: distribution object, (bsize, ydim)        
-        """
-        # TODO: add condition for the differrent reduction methods
-        # logpy_y (bsize, max_target_seqlen)
-        logp_y = y_dist.log_prob(y).mean()
-        # print('logp_y:\n', logp_y)
-        # print('logp_y.shape:', logp_y.shape)
-        return - logp_y
-    
 class CELoss(nn.Module):
     def __init__(self, reduction='none'):
         super().__init__()
@@ -101,5 +83,3 @@ class ScaledMSELoss(nn.Module):
         mu = torch.minimum(torch.exp(6 * (y-3)) + 1, torch.ones_like(y) * 5)
 
         return torch.mean(self.mseloss(pred, y) * mu)
-
-        # return torch.mean(mu * (y-pred) ** 2)

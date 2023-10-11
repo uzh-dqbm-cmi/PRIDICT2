@@ -15,44 +15,6 @@ class MaskGenerator():
         for bindx, tlen in enumerate(x_len):
             x_mask[bindx, tlen:] = 0
         return x_mask
-    
-# class AnnotEmbeder_InitSeq(nn.Module):
-#     def __init__(self, embed_dim, annot_embed, assemb_opt='add'):
-#         super().__init__()
-#         self.num_nucl = 4 # nucleotide embeddings
-#         self.num_inidc = 2 # binary embedding
-#         self.assemb_opt = assemb_opt
-#         self.We = nn.Embedding(self.num_nucl+1, embed_dim, padding_idx=self.num_nucl)
-
-#         self.Wproto = nn.Embedding(self.num_inidc, annot_embed)
-#         self.Wpbs = nn.Embedding(self.num_inidc, annot_embed)
-#         self.Wrt = nn.Embedding(self.num_inidc, annot_embed)
-    
-#     def forward(self, X_nucl, X_proto, X_pbs, X_rt):
-#         if self.assemb_opt == 'add':
-#             return self.We(X_nucl) + self.Wproto(X_proto) + self.Wpbs(X_pbs) + self.Wrt(X_rt)
-#         elif self.assemb_opt == 'stack':
-#             return torch.cat([self.We(X_nucl), self.Wproto(X_proto), self.Wpbs(X_pbs), self.Wrt(X_rt)], axis=-1)
-
-
-# class AnnotEmbeder_MutSeq(nn.Module):
-#     def __init__(self, embed_dim, annot_embed, assemb_opt='add'):
-#         super().__init__()
-#         self.num_nucl = 4 # nucleotide embeddings
-#         self.num_inidc = 2 # binary embedding
-#         self.assemb_opt = assemb_opt
-
-#         self.We = nn.Embedding(self.num_nucl+1, embed_dim, padding_idx=self.num_nucl)
-
-#         self.Wpbs = nn.Embedding(self.num_inidc, annot_embed)
-#         self.Wrt = nn.Embedding(self.num_inidc, annot_embed)
-    
-#     def forward(self, X_nucl, X_pbs, X_rt):
-#         if self.assemb_opt == 'add':
-#             return self.We(X_nucl) + self.Wpbs(X_pbs) + self.Wrt(X_rt)
-#         elif self.assemb_opt == 'stack':
-#             return torch.cat([self.We(X_nucl), self.Wpbs(X_pbs), self.Wrt(X_rt)], axis=-1)
-
 
 class AnnotEmbeder_InitSeq(nn.Module):
     def __init__(self, embed_dim, annot_embed, assemb_opt='add'):
@@ -367,9 +329,6 @@ class MLPDecoderDistribution(nn.Module):
 
         self.W_mu = nn.Linear(embed_dim, outp_dim)
         self.log_softmax = nn.LogSoftmax(dim=-1)
-        # self.W_sigma = nn.Linear(embed_dim, outp_dim)
-        
-        # self.softplus = nn.Softplus()
 
     def forward(self, X):
         """
@@ -383,10 +342,6 @@ class MLPDecoderDistribution(nn.Module):
         mu = self.W_mu(out)
         log_mu = self.log_softmax(mu)
         return log_mu
-        # logsigma  = self.W_sigma(out)
-        # sigma = 0.1 + 0.9 * self.softplus(logsigma)
-
-        # return mu, sigma
 
 def init_params_(model):
     for p_name, p in model.named_parameters():

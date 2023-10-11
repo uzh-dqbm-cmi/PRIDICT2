@@ -56,8 +56,9 @@ import primer3
 from pridict.pridictv2.utilities import *
 from pridict.pridictv2.dataset import *
 from pridict.pridictv2.predict_outcomedistrib import *
-from trained_models.DeepCas9_TestCode import runprediction
 
+if deepcas9_trigger:
+    from trained_models.DeepCas9_TestCode import runprediction
     
 
 def primesequenceparsing(sequence: str) -> object:

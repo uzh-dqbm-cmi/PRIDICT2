@@ -8,7 +8,6 @@ import scipy
 from scipy.stats import gaussian_kde
 import pandas as pd
 from matplotlib import pyplot as plt
-import seaborn as sns
 
 class ContModelScore:
     def __init__(self, best_epoch_indx, spearman_corr, pearson_corr):
@@ -169,32 +168,6 @@ def build_performance_dfs(target_dir, num_runs, dsettype, outcome_name, task_typ
     target_dir = create_directory(target_dir)
     return get_performance_results(target_dir, num_runs, dsettype, ref_run, outcome_name=outcome_name, task_type=task_type, switch=switch)
 
-# def compute_performance_from_runs(pred_lst):
-#     num_runs= len(pred_lst)
-#     metric_names = ['spearman_corr', 'pearson_corr']
-#     num_metrics = 2
-#     all_perf = {}
-#     perf_dict = [{} for i in range(num_metrics)]
-    
-#     for run_num in range(num_runs):
-#         runname = 'run_{}'.format(run_num)
-#         preddf = pred_lst[run_num]
-#         perf_dict[0][runname] = compute_spearman_corr(preddf['true_score'], preddf['pred_score']).correlation
-#         perf_dict[1][runname] = compute_pearson_corr(preddf['true_score'],preddf['pred_score'])[0]
-#     perf_df_lst = []
-#     for i in range(num_metrics):
-#         all_perf = perf_dict[i]
-#         all_perf_df = pd.DataFrame(all_perf, index=[metric_names[i]])
-#         median = all_perf_df.median(axis=1)
-#         mean = all_perf_df.mean(axis=1)
-#         stddev = all_perf_df.std(axis=1)
-#         all_perf_df['mean'] = mean
-#         all_perf_df['median'] = median
-#         all_perf_df['stddev'] = stddev
-#         perf_df_lst.append(all_perf_df.sort_values('mean', ascending=False))
-    
-#     return pd.concat(perf_df_lst, axis=0)
-
 def update_Adamoptimizer_lr_momentum_(optm, lr, momen):
     """in-place update for learning rate and momentum for Adam optimizer"""
     for pg in optm.param_groups:
@@ -283,74 +256,6 @@ def build_predictions_df(seq_ids, true_score, pred_score, y_ref_names, dset_name
         print('after removing duplicates -> pred.shape:', predictions_df.shape)
 
     return predictions_df
-
-# def build_predictions_df(seq_ids, true_score, pred_score, y_ref_names):
-         
-#     seqid_inpseq_df = pd.DataFrame(seq_ids)
-#     seqid_inpseq_df.columns = ['seq_id']
-    
-#     target_names = ['averageedited', 'averageunedited', 'averageindel']
-
-#     df_dict = {}
-
-#     if true_score is not None:
-#         true_score_arr = np.array(true_score)
-#         if len(true_score_arr.shape) == 1: # (nsamples,)
-#             true_score_arr = true_score_arr.reshape(-1,1)
-        
-#         num_targets = true_score_arr.shape[-1]
-#         assert num_targets in {1,3}, '# of reference outcomes should be 1 or 3'
-#         assert len(y_ref_names) == num_targets, 'y_ref_names list should be equal to number of reference target outcomes!'
-#         if num_targets == 3:
-#             assert y_ref_names == target_names # enforce order of outcome names!
-#         true_scores_dict = {}
-#         for i in range (num_targets):
-#             target_name = y_ref_names[i]
-#             true_scores_dict[f'true_{target_name}'] = true_score_arr[:, i]
-#         df_dict.update(true_scores_dict)
-
-#     pred_score_arr = np.array(pred_score)
-#     if len(pred_score_arr.shape) == 1: # (nsamples,)
-#         pred_score_arr = pred_score_arr.reshape(-1, 1)
-    
-#     num_targets = pred_score_arr.shape[-1]
-#     assert num_targets in {1,3}, '# of predicted outcomes should be 1 or 3'
-#     pred_scores_dict = {}
-#     if num_targets == 3:
-#         for i in range (num_targets):
-#             target_name = target_names[i]
-#             pred_scores_dict[f'pred_{target_name}'] = pred_score_arr[:, i]
-#     elif num_targets == 1: # this assumes averagedited models in care y_ref is empty list [] #TODO: decouple y_ref_names from true_score
-#         if y_ref_names is not None:
-#             target_name = y_ref_names[0]
-#             pred_scores_dict[f'pred_{target_name}'] = pred_score_arr[:, i]
-#         else:
-#             target_name = target_names[0]
-#             pred_scores_dict[f'pred_{target_name}'] = pred_score_arr[:, i]
-
-#     print('true_score_arr.shape:', true_score_arr.shape)
-#     print('pred_score_arr.shape:',pred_score_arr.shape)
-#     df_dict.update(pred_scores_dict)
-#     predictions_df = pd.concat([seqid_inpseq_df, pd.DataFrame(df_dict)], axis=1)
-#     return predictions_df
-
-# def build_predictions_df(seq_ids, true_score, pred_score):
-         
-#     seqid_inpseq_df = pd.DataFrame(seq_ids)
-#     seqid_inpseq_df.columns = ['seq_id']
-
-#     if true_score is not None:
-#         df_dict = {
-#             'true_score': true_score,
-#             'pred_score': pred_score
-#         }
-#     else:
-#         df_dict = {
-#             'pred_score': pred_score
-#         }     
-
-#     predictions_df = pd.concat([seqid_inpseq_df, pd.DataFrame(df_dict)], axis=1)
-#     return predictions_df
 
 def dump_dict_content(dsettype_content_map, dsettypes, desc, wrk_dir):
     for dsettype in dsettypes:
@@ -455,13 +360,6 @@ def require_nonleaf_grad(v, tensor_name):
     v.register_hook(grad_track_hook(tensor_name))
 
 ##### utilities to retune trained model on another smaller set of experiments ####
-# def get_trainable_params(models):
-#     models_param = []
-#     for layer, layer_name in models:
-#         for param_name, params in layer.named_parameters():
-#             if params.requires_grad:
-#                 models_param.extend(list(params))
-#     return models_param
 
 def get_trainable_params(models):
     models_param = []
@@ -561,19 +459,6 @@ def restrict_grad_(mparams, mode, limit):
                 param.grad.data.clamp_(minl, maxl)
 def check_na(df):
     assert df.isna().any().sum() == 0
-
-# def perfmetric_report_cont(pred_score, ref_score, epoch_loss, epoch, outlog):  
-#     lsep = "\n"
-#     report = "Epoch: {}".format(epoch) + lsep
-#     spearman_corr, pvalue_spc = compute_spearman_corr(pred_score, ref_score)
-#     pearson_corr, pvalue_prc = compute_pearson_corr(pred_score, ref_score)
-#     report += f"Spearman correlation score:{spearman_corr}    pvalue:{pvalue_spc}" + lsep
-#     report += f"Pearson correlation score:{pearson_corr}    pvalue:{pvalue_prc}" + lsep    
-#     report += f"epoch average batch loss:{epoch_loss}" + lsep
-#     report += "-"*15 + lsep
-#     modelscore = ContModelScore(epoch, spearman_corr, pearson_corr)
-#     ReaderWriter.write_log(report, outlog)
-#     return modelscore
 
 def perfmetric_report_cont(pred_score, ref_score, epoch_loss, epoch, outlog):
     """
@@ -811,81 +696,3 @@ def plot_corr(y_pred, y_ref, model_name, dsettype, sort_pts_density=False, fig_s
         fig.savefig(os.path.join(figpth),bbox_inches='tight')
         plt.close()
 
-# def visualize_motif_agg(top_motif_df, x_varname, model_name, color, t_class=1, topk=10, fig_dir=None):
-#     if t_class is not None:
-#         motif_df = top_motif_df.loc[top_motif_df['true_class']==t_class].copy()
-#     else:
-#         motif_df = top_motif_df.copy()
-#     unique_pos = set(motif_df['base_pos'].unique())
-#     if model_name == 'AID':
-#         target_pos = {2,3,4,5} # 3,4,5,6 1-indexing
-#     else:
-#         target_pos = {3,4,5,6,7} # {4,5,6,7,8} 1-indexing
-#     target_pos_lst = list(target_pos.intersection(unique_pos))
-#     fig, axs = plt.subplots(figsize=(9,11), 
-#                             nrows=len(target_pos_lst), 
-#                             constrained_layout=True) # we index these axes from 0 subscript\
-#     axs = axs.ravel()
-#     letters = list(string.ascii_uppercase)[:len(target_pos_lst)]
-
-#     panel_labels = [letters[i] for i in range(len(target_pos_lst))]
-# #     ymax = motif_df.loc[motif_df['base_pos'].isin(target_pos_lst), 'proportion'].max()
-#     for i, ax in enumerate(axs):
-#         ax.text(-0.05, 1.08, panel_labels[i], transform=ax.transAxes,
-#                 fontsize=14, fontweight='bold', va='top', ha='right')
-#         pos = target_pos_lst[i]
-#         tmp_df = motif_df[motif_df['base_pos'] == pos]
-#         g = sns.barplot(x=x_varname, 
-#                         y='proportion', 
-#                         data=tmp_df, 
-#                         ax=ax, palette=[color]*topk)
-        
-# #         g.legend(bbox_to_anchor=(0., -0.2), loc=2, borderaxespad=0.)
-#         ax.set_xlabel(f'3-mer motifs at base position {pos+1}', fontsize=12)
-# #         ax.set_title(model_order[i], fontsize=12)
-#         ax.set_ylabel('Percent', fontsize=12)
-#         ax.tick_params(labelsize=12)
-# #         ymax = tmp_df['proportion'].max()
-# #         ax.set_ylim([0, int(ymax+0.5)])
-# #         ax.set_xticklabels(rotation=55, fontsize=13)
-#     if fig_dir:
-#         fig.savefig(os.path.join(fig_dir,f'{model_name}_aggmotifs_class{t_class}.pdf'))
-
-# def highlight_attn_on_seq(df, indx, model_name, cmap = 'YlOrRd', fig_dir=None):
-#     fig, ax = plt.subplots(figsize=(11,3), 
-#                             nrows=1, 
-#                             constrained_layout=True) # we index these axes from 0 subscript\
-#     seq_id = df.iloc[indx]['id']
-#     panel_labels = [df['id']]
-#     attn_vars = [f'Attn{i}'for i in range(20)]
-#     letter_vars = [f'L{i}' for i in range(1,21)]
-#     # y_pred = df.iloc[indx]['true_class']
-#     prob = df.iloc[indx]['prob_score_class1']
-#     base_pos = df.iloc[indx]['base_pos'] + 1
-#     attn_scores  = df.iloc[indx][[f'Attn{i}'for i in range(20)]].values.astype(np.float).reshape(1,-1)
-#     max_score = df.iloc[indx][[f'Attn{i}'for i in range(20)]].max()
-#     print(max_score)
-#     base_letters =  df.iloc[indx][letter_vars].values.reshape(1,-1).tolist()
-#     print(base_letters)
-#     cbar_kws={'label': 'Attention score', 'orientation': 'horizontal'}
-# #     cmap='YlOrRd'
-#     g = sns.heatmap(attn_scores, cmap=cmap,annot=base_letters,fmt="",linewidths=.5, cbar_kws=cbar_kws, ax=ax)
-    
-# #         g.legend(bbox_to_anchor=(0., -0.2), loc=2, borderaxespad=0.)
-    
-#     ax.set_xticklabels(list(range(1,21)))
-#     ax.set(xlabel='Base position', ylabel='')
-#     ax.set_yticklabels([''])
-#     ax.text(20.5, 0.1 , 'base position = {}'.format(base_pos), bbox={'facecolor': '#4BB3FD', 'alpha': 0.2, 'pad': 10},
-#          fontsize=12)
-#     # ax.text(20.5, 0.55 ,r'$y_{pred}=$'+ '{}'.format(y_pred), bbox={'facecolor': 'green', 'alpha': 0.2, 'pad': 10},
-#     #          fontsize=12)
-#     ax.text(20.5, 0.65,r'Edit $probability=$'+ '{:.2f}'.format(prob), bbox={'facecolor': '#DD7596', 'alpha': 0.2, 'pad': 10},
-#              fontsize=12)
-#     ax.text(0.2, -0.2 ,r'$seqid={}$'.format(seq_id), bbox={'facecolor': 'grey', 'alpha': 0.2, 'pad': 10},
-#                  fontsize=12)
-#     if fig_dir:
-#         fig.savefig(os.path.join(fig_dir,f'{model_name}_seqattn_{seq_id}_basepos_{base_pos}.pdf'))
-#         plt.close()
-    
-#     return ax
