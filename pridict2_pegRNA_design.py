@@ -1016,7 +1016,7 @@ def remove_col(df, colname):
     if colname in df:
         del df[colname]
 def get_cell_types():
-    return ['K562', 'HEK']
+    return ['HEK', 'K562']
 
 def get_shortdf_colnames():
     models = ['PRIDICT1_1', 'PRIDICT1_2', 'PRIDICT2_0']  # List of models you are using
