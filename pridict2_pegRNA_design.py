@@ -58,7 +58,6 @@ from pridict.pridictv2.dataset import *
 from pridict.pridictv2.predict_outcomedistrib import *
 from trained_models.DeepCas9_TestCode import runprediction
 
-    
 
 def primesequenceparsing(sequence: str) -> object:
     """
@@ -433,7 +432,7 @@ def primerdesign(seq):
     return primerdf_short, primerdf
 
 
-def parallel_batch_analysis(inp_dir, inp_fname, out_dir, out_fname, num_proc_arg, nicking, ngsprimer, run_ids=[0], combine_dfs=True):
+def parallel_batch_analysis(inp_dir, inp_fname, out_dir, out_fname, num_proc_arg, nicking, ngsprimer, run_ids=[0]):
     """Perform pegRNA predictions in batch-mode."""
     batchsequencedf = pd.read_csv(os.path.join(inp_dir, inp_fname))
     if 'editseq' in batchsequencedf:
@@ -443,8 +442,9 @@ def parallel_batch_analysis(inp_dir, inp_fname, out_dir, out_fname, num_proc_arg
                 try:
                     # make sequence_name column to string even if there are only numbers
                     batchsequencedf['sequence_name'] = batchsequencedf['sequence_name'].astype(str)
-                    run_processing_parallel(batchsequencedf, out_dir, out_fname, num_proc_arg, nicking, ngsprimer, run_ids=run_ids, combine_dfs=combine_dfs)
-                except ValueError:
+                    run_processing_parallel(batchsequencedf, out_dir, out_fname, num_proc_arg, nicking, ngsprimer, run_ids=run_ids)
+                except ValueError as ve:
+                    print(f"ValueError: {ve}")
                     print('***\n Error :( Check your input format is compatible with PRIDICT! More information in input box on https://pridict.it/ ...\n***\n')
 
             else:
@@ -841,34 +841,6 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
         # Inserting common columns outside the loop
         pegdataframe.insert(len(pegdataframe.columns), 'sequence_name', name)
 
-
-        # average_editing_scores = {cell_type: [] for cell_type in cell_types}
-        # # average_unintended_scores = {cell_type: [] for cell_type in cell_types}
-
-        # for model_id, pred_df in all_avg_preds.items():
-        #     # Looping over each cell type
-        #     for cell_type in cell_types:
-        #         # Filtering the dataframe based on cell type
-        #         pred_df_cell = pred_df[pred_df['dataset_name'] == cell_type]
-                
-        #         # Calculating the editing prediction lists
-        #         editingpredictionlist = (pred_df_cell['pred_averageedited']*100).tolist()
-        #         # unintendededitingpredictionlist = (pred_df_cell['pred_averageindel']*100).tolist()
-
-        #         average_editing_scores[cell_type].append(editingpredictionlist)
-        #         # average_unintended_scores[cell_type].append(unintendededitingpredictionlist)
-
-        #         # Inserting cell-type specific columns into pegdataframe
-        #         # pegdataframe.insert(len(pegdataframe.columns), f'{model_id}_editing_Score_deep_{cell_type}', editingpredictionlist)
-        #         # pegdataframe.insert(len(pegdataframe.columns), f'{model_id}_unintended_Score_deep_{cell_type}', unintendededitingpredictionlist)
-
-        # for cell_type in cell_types:
-        #     average_editing = np.mean(average_editing_scores[cell_type], axis=0).tolist()
-        #     # average_unintended = np.mean(average_unintended_scores[cell_type], axis=0).tolist()
-
-        #     pegdataframe.insert(len(pegdataframe.columns), f'PRIDICT2_0_editing_Score_deep_{cell_type}', average_editing)
-        #     # pegdataframe.insert(len(pegdataframe.columns), f'PRIDICT2_0_unintended_Score_deep_{cell_type}', average_unintended)
-
         tmp = [all_avg_preds[model_id] for model_id in all_avg_preds]
         # seq_id, dataset_name, model, predictions cols
         tmp_df = pd.concat(tmp, axis=0, ignore_index=True)
@@ -883,8 +855,8 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
 
         def find_closest_percentile(value, ref_column, percentile_column):
             closest_index = np.abs(ref_column - value).idxmin()
-            return percentile_column.loc[closest_index] 
-         
+            return percentile_column.loc[closest_index]         
+
         libdiversedf = pd.read_csv('dataset/20230913_Library_Diverse_Ranking_Percentile.csv')    
         for cell_type in cell_types:
             pegdataframe.sort_values(by=[f'PRIDICT2_0_editing_Score_deep_{cell_type}'], inplace=True, ascending=False)
@@ -939,7 +911,7 @@ def fix_mkl_issue():
         print('setting MKL_THREADING_LAYER = GNU')
         os.environ['MKL_THREADING_LAYER'] = 'GNU'
 
-def run_processing_parallel(df, pred_dir, fname, num_proc_arg, nicking, ngsprimer, run_ids=[0], combine_dfs=True):
+def run_processing_parallel(df, pred_dir, fname, num_proc_arg, nicking, ngsprimer, run_ids=[0]):
 
     fix_mkl_issue() # comment this 
     queue = mp.Queue()
@@ -997,63 +969,12 @@ def run_processing_parallel(df, pred_dir, fname, num_proc_arg, nicking, ngsprime
             spawn_q_process(q_process)
             spawned_processes = spawned_processes + 1
     
-    # assemble all sequence dataframes into one --- optional
-    if combine_dfs:
-        combined_df = assemble_df(seqnames_lst, 'pegRNA_Pridict_full', pred_dir)
-        remove_col(combined_df, 'Unnamed: 0')
-        
-        combined_df.to_csv(os.path.join(pred_dir, f'{fname}_pegRNA_Pridict_full.csv'), index=False)
-
-        cols = get_shortdf_colnames()
-        pegdataframe_short = combined_df[cols]
-        pegdataframe_short.to_csv(os.path.join(pred_dir, f'{fname}_pegRNA_Pridict_Scores.csv'), index=False)
-
-        combined_bestpegdf = assemble_df(seqnames_lst, 'best_pegdf', pred_dir)
-        combined_bestpegdf.to_csv(os.path.join(pred_dir, f'{fname}_best_pegdf.csv'), index=False)
-
-
 def remove_col(df, colname):
     if colname in df:
         del df[colname]
+
 def get_cell_types():
     return ['HEK', 'K562']
-
-def get_shortdf_colnames():
-    models = ['PRIDICT1_1', 'PRIDICT1_2', 'PRIDICT2_0']  # List of models you are using
-    cell_types = get_cell_types()
-    base_cols = [
-        'Protospacer-Oligo-FW', 'Protospacer-Oligo-RV', 'Extension-Oligo-FW',
-        'Extension-Oligo-RV', 'Original_Sequence', 'Edited-Sequences',
-        'Target-Strand', 'Mutation_Type', 'Correction_Type', 'Correction_Length',
-        'Editing_Position', 'PBSlength', 'RToverhanglength', 'RTlength',
-        'EditedAllele', 'OriginalAllele', 'Spacer-Sequence',
-        'PBSrevcomp', 'RTseqoverhangrevcomp', 'RTrevcomp',
-        'pegRNA', 'Editor_Variant', 'sequence_name'
-    ]
-    
-    # Add PRIDICT scores for each model and cell type
-    pridict_cols = []
-    for model in models:
-        for cell_type in cell_types:
-            pridict_cols.append(f'{model}_editing_Score_deep_{cell_type}')
-            # pridict_cols.append(f'{model}_unintended_Score_deep_{cell_type}')
-    
-    # Add rank columns for each cell type
-    rank_cols = [f'{cell_type}_rank' for cell_type in cell_types]
-    
-    return base_cols + pridict_cols + rank_cols
-
-def assemble_df(seqnames_lst, namesuffix, df_dir):
-    df_lst = []
-    for seq_name in seqnames_lst:
-        fpath = os.path.join(df_dir, f'{seq_name}_{namesuffix}.csv')
-        if os.path.isfile(fpath):
-            df =  pd.read_csv(fpath)
-            df['sequence_name'] = seq_name
-            df_lst.append(df)
-    combined_df = pd.concat(df_lst, axis=0)
-    return combined_df
-
 
 def spawn_q_process(q_process):
     print(">>> spawning row computation process")
@@ -1083,7 +1004,6 @@ if __name__ == "__main__":
     batch_m.add_argument("--input-fname", type=str, required=True, help="Input filename - name of csv file that has two columns {editseq, sequence_name}. See batch_template.csv in the ./input folder ")
     batch_m.add_argument("--output-fname", type=str, help="Output filename for the resulting dataframe. If not specified, the name of the input file will be used")
     batch_m.add_argument("--use_5folds", action='store_true', help="Use all 5-folds trained models (and average output). Default is to use fold-1 model")
-    batch_m.add_argument("--combine_results", action='store_true', help="Compile all results into one dataframe")
     batch_m.add_argument("--nicking", action='store_true', help="Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction.")
     batch_m.add_argument("--ngsprimer", action='store_true', help="Additionally, design NGS primers for edit based on Primer3 design.")
     batch_m.add_argument("--cores", type=int, default=0, help="Number of cores to use for multiprocessing. Default value uses 3 available cores. Maximum 3 cores to prevent memory issues.")
@@ -1116,7 +1036,7 @@ if __name__ == "__main__":
         else:
             ngsprimer=False
         
-        run_processing_parallel(df, out_dir, fname, num_proc_arg, nicking, ngsprimer, run_ids=run_ids, combine_dfs=False)
+        run_processing_parallel(df, out_dir, fname, num_proc_arg, nicking, ngsprimer, run_ids=run_ids)
 
     elif args.command == 'batch':
         print('Running in batch mode:')
@@ -1139,13 +1059,11 @@ if __name__ == "__main__":
         else:
             out_fname = args.input_fname.split('.')[0]
         
-        # max 3 cores to prevent memory issues
         if args.cores:
             num_proc_arg=args.cores
-            if num_proc_arg > 3:
-                num_proc_arg=3
         else:
-            num_proc_arg=3
+            num_proc_arg=os.cpu_count()
+        print(f'Running prediction on {num_proc_arg} cores...')
             
         if args.nicking:
             nicking=True
@@ -1157,6 +1075,6 @@ if __name__ == "__main__":
         else:
             ngsprimer=False
 
-        parallel_batch_analysis(inp_dir, inp_fname, out_dir, out_fname, num_proc_arg, nicking, ngsprimer, run_ids=run_ids, combine_dfs=args.combine_results)
+        parallel_batch_analysis(inp_dir, inp_fname, out_dir, out_fname, num_proc_arg, nicking, ngsprimer, run_ids=run_ids)
     else:
         print('Please specify how to run PRIDICT2.0 ("manual" or "batch") as argument after the script name.')
