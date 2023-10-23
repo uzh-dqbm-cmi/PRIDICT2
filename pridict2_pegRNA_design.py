@@ -1047,8 +1047,11 @@ if __name__ == "__main__":
         
         if args.cores:
             num_proc_arg=args.cores
+            if num_proc_arg > 3:
+                num_proc_arg = 3
         else:
-            num_proc_arg=os.cpu_count()
+            num_proc_arg = 3
+            # num_proc_arg=os.cpu_count()
         print(f'Running prediction on {num_proc_arg} cores...')
             
         if args.nicking:
