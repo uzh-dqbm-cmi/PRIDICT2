@@ -1000,8 +1000,9 @@ if __name__ == "__main__":
     manual_m.add_argument("--nicking", action='store_true', help="Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction.")
     manual_m.add_argument("--ngsprimer", action='store_true', help="Additionally, design NGS primers for edit based on Primer3 design.")
 
-
+    batch_m.add_argument("--input-dir", type=str, default='./input', help="Input directory where the input csv file is found on disk")
     batch_m.add_argument("--input-fname", type=str, required=True, help="Input filename - name of csv file that has two columns {editseq, sequence_name}. See batch_template.csv in the ./input folder ")
+    batch_m.add_argument("--output-dir", type=str, default='./predictions', help="Output directory where results are dumped on disk")
     batch_m.add_argument("--output-fname", type=str, help="Output filename for the resulting dataframe. If not specified, the name of the input file will be used")
     batch_m.add_argument("--use_5folds", action='store_true', help="Use all 5-folds trained models (and average output). Default is to use fold-1 model")
     batch_m.add_argument("--nicking", action='store_true', help="Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction.")
@@ -1040,13 +1041,20 @@ if __name__ == "__main__":
 
     elif args.command == 'batch':
         print('Running in batch mode:')
+        
+        if args.input_dir != './input':
+            inp_dir = create_directory(args.input_dir, os.getcwd())
+        else:
+            inp_dir = os.path.join(os.path.dirname(__file__), args.input_dir)
 
-        inp_dir = os.path.join(os.path.dirname(__file__), './input')
         print('input directory:', inp_dir)
 
         inp_fname = args.input_fname
 
-        out_dir = os.path.join(os.path.dirname(__file__), './predictions')
+        if args.output_dir != './predictions':
+            out_dir = create_directory(args.output_dir, os.getcwd())
+        else:
+            out_dir = os.path.join(os.path.dirname(__file__), args.output_dir)
         print('output directory:', out_dir)
 
         if args.use_5folds:
