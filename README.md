@@ -56,7 +56,7 @@ The easiest way to install and manage Python packages on various OS platforms is
     	conda install conda-forge::tensorflow
     	# optional (only if encountering error with libiomp5.dylib on MacOS):
     	pip uninstall numpy
-    	pip install numpy==1.22.1
+    	pip install numpy==1.22.1 # or pip install numpy
     	###
     	
 	
