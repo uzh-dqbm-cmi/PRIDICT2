@@ -335,9 +335,9 @@ def deeppridict(pegdataframe, models_lst_dict, model_type='original'):
     cell_types = get_cell_types(model_type)
     print(cell_types)
     batch_size = int(1500/len(cell_types))
-    print('successful check -1')
+    # print('successful check -1')
     prieml_model = get_prieml_model_template()
-    print('successful check 0')
+    # print('successful check 0')
     # print('deepdf[seq_id]:\n', deepdf['seq_id'])
     # data processing for the same data can be done once given that we already specified the cell_types a priori
     dloader = prieml_model.prepare_data(deepdf, 
@@ -346,7 +346,7 @@ def deeppridict(pegdataframe, models_lst_dict, model_type='original'):
                                         y_ref=[], 
                                         batch_size=batch_size)
     
-    print('successful check 1')
+    # print('successful check 1')
     all_avg_preds = {} 
 
     for model_id, model_runs_lst in models_lst_dict.items():
@@ -354,28 +354,28 @@ def deeppridict(pegdataframe, models_lst_dict, model_type='original'):
         pred_dfs = [] # List to store prediction dataframes for each model
         
         runs_c = 0
-        print('successful check 2')
+        # print('successful check 2')
         for loaded_model_lst, model_dir in model_runs_lst: # Iterate over each model
             # Predict using the current model
             # print(dloader)
             # print('loaded_model_lst:',loaded_model_lst)
             pred_df = prieml_model.predict_from_dloader_using_loaded_models(dloader, loaded_model_lst, y_ref=plain_tcols)
-            print('successful check 3')
+            # print('successful check 3')
             pred_df['run_num'] = runs_c # this is irrelevant as we will average at the end
-            print('successful check 4')
+            # print('successful check 4')
             pred_dfs.append(pred_df) # Append the prediction dataframe to the list
-            print('successful check 5')
+            # print('successful check 5')
             runs_c += 1
             # print('pred_df:\n', pred_df)
         # compuate average prediction across runs
         pred_df_allruns = pd.concat(pred_dfs, axis=0, ignore_index=True)
         avg_preds = prieml_model.compute_avg_predictions(pred_df_allruns)
-        print('successful check 6')
+        # print('successful check 6')
         avg_preds['model'] = model_id
-        print('successful check 7')
+        # print('successful check 7')
         # store the average prediction dataframe in for a specified model in a dictionary
         all_avg_preds[model_id] = avg_preds
-        print('successful check 8')
+        # print('successful check 8')
     # print('all_avg_predicitons:\n', all_avg_preds)
     return all_avg_preds
 
