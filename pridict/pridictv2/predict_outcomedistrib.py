@@ -133,9 +133,12 @@ class PRIEML_Model:
             dloader_lst.append(dloader)
         return ConcatDataLoaders(dloader_lst, cell_types, mode = 'cycle')
 
-    def _load_model_config(self, mconfig_dir):
+    def _load_model_config(self, mconfig_dir, cell_types=[]):
         print('--- loading model config ---')
         mconfig, options = get_saved_config(mconfig_dir)
+        # if options dictionary does not contain datasets_name as key, set it to cell_types
+        if 'datasets_name' not in options:
+            options['datasets_name'] = cell_types
         return mconfig, options
 
     def _build_base_model(self, config, cell_types=[]):
@@ -484,7 +487,7 @@ class PRIEML_Model:
                         pred_score.extend(torch.exp(y_hat_logit).tolist())
 
 
-                    seqs_ids_lst.extend(b_seqs_id.tolist())
+                    seqs_ids_lst.extend(list(b_seqs_id))
                     dataset_ids_lst.extend([datasets_name_lst[i_data]]*len(b_seqs_id))
 
  
@@ -524,10 +527,10 @@ class PRIEML_Model:
         return dloader
 
 
-    def build_retrieve_models(self, model_dir):
+    def build_retrieve_models(self, model_dir, cell_types=[]):
 
         mconfig_dir = os.path.join(model_dir, 'config')
-        mconfig = self._load_model_config(mconfig_dir)
+        mconfig = self._load_model_config(mconfig_dir, cell_types=[])
         # print(mconfig)
         
         # list of tuples (model, model_name)
