@@ -530,7 +530,7 @@ class PRIEML_Model:
     def build_retrieve_models(self, model_dir, cell_types=[]):
 
         mconfig_dir = os.path.join(model_dir, 'config')
-        mconfig = self._load_model_config(mconfig_dir, cell_types=[])
+        mconfig = self._load_model_config(mconfig_dir, cell_types)
         # print(mconfig)
         
         # list of tuples (model, model_name)

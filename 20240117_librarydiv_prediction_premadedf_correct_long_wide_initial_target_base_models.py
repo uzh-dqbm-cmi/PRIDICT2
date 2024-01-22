@@ -33,7 +33,7 @@ def load_pridict_model(run_ids=[0], model_type='base_90k'):
         ]
     elif model_type == 'base_390k':
         modellist = [
-            ('base_390k', 'pe_rnn_distribution_multidata', 'xp_2023-08-26_20-58-14')
+            ('base_390k', 'pe_rnn_distribution_multidata', 'exp_2023-08-26_20-58-14')
         ]
     
     # create a model template that will be used to load/instantiate a target trained model
@@ -77,7 +77,7 @@ def deeppridict(pegdataframe, models_lst_dict, model_type='base_90k'):
                   'edited_base_mt_nan']
 
     deepdf = pegdataframe[deepdfcols].copy()
-    deepdf.insert(1, 'seq_id', list(range(len(deepdf))))
+    # deepdf.insert(1, 'seq_id', list(range(len(deepdf))))
     deepdf['protospacerlocation_only_initial'] = deepdf['protospacerlocation_only_initial'].apply(lambda x: str(x))
     deepdf['PBSlocation'] = deepdf['PBSlocation'].apply(lambda x: str(x))
     deepdf['RT_initial_location'] = deepdf['RT_initial_location'].apply(lambda x: str(x))
@@ -119,7 +119,8 @@ def deeppridict(pegdataframe, models_lst_dict, model_type='base_90k'):
         for loaded_model_lst, model_dir in model_runs_lst: # Iterate over each model
             # Predict using the current model
             print(dloader)
-            print('loaded_model_lst:',loaded_model_lst)
+            # print('loaded_model_lst:',loaded_model_lst)
+            print('running model from:', model_dir)
             pred_df = prieml_model.predict_from_dloader_using_loaded_models(dloader, loaded_model_lst, y_ref=plain_tcols)
             print('successful check 3')
             pred_df['run_num'] = runs_c # this is irrelevant as we will average at the end
@@ -130,7 +131,9 @@ def deeppridict(pegdataframe, models_lst_dict, model_type='base_90k'):
             # print('pred_df:\n', pred_df)
         # compuate average prediction across runs
         pred_df_allruns = pd.concat(pred_dfs, axis=0, ignore_index=True)
+        print('pred_df_allruns.shape:', pred_df_allruns.shape)
         avg_preds = prieml_model.compute_avg_predictions(pred_df_allruns)
+        print('avg_preds.shape:', avg_preds.shape)
         print('successful check 6')
         avg_preds['model'] = model_id
         print('successful check 7')
@@ -156,20 +159,34 @@ def get_cell_types(model_type):
         return ['HEKschwank','HEKhyongbum']
 
 if __name__ == "__main__":
-    for model_type in ['base_90k','base_390k']:
+    tmodels = ['base_90k','base_390k']
+    for model_type in tmodels:
         # do 5-fold predictions
-        run_ids=[0,1,2,3,4]
+        run_ids = [0,1,2,3,4]
         models_lst_dict = load_pridict_model(run_ids = run_ids, model_type = model_type)
         pridict2_premadedf = pd.read_csv('input/20240113_librarydiv_df_batchfile_with_adapted_wide_initial_target.csv')
         all_avg_preds = deeppridict(pridict2_premadedf, models_lst_dict, model_type)
+        print('all_avg_preds:\n', all_avg_preds)
 
-        # Extracting cell types from model
         cell_types = get_cell_types(model_type)
 
-        tmp = [all_avg_preds[model_id] for model_id in all_avg_preds]
-        # seq_id, dataset_name, model, predictions cols
-        tmp_df = pd.concat(tmp, axis=0, ignore_index=True)
-        agg_df = compute_average_predictions(tmp_df, grp_cols=['seq_id', 'dataset_name'])
+        #########
+        # this block is used to take average prediction from ensemble of models 
+        # in case we have separate modlels, each with multiple trainning runs then we do not need it
+        # we simply collect the average performance prediction using `agg_df = all_avg_preds[model_type]`
+        #########
+                
+        ### Extracting cell types from model
+        # tmp = [all_avg_preds[model_id] for model_id in all_avg_preds]
+        # # seq_id, dataset_name, model, predictions cols
+        # tmp_df = pd.concat(tmp, axis=0, ignore_index=True)
+        # agg_df = compute_average_predictions(tmp_df, grp_cols=['seq_id', 'dataset_name'])
+
+
+        agg_df = all_avg_preds[model_type]
+        print('agg_df final shape:', agg_df.shape)
+        print(agg_df['dataset_name'])
+        print('pridict2_premadedf.shape:', pridict2_premadedf.shape)
         # print('agg_df:\n', agg_df)
         for cell_type in cell_types:
             cond  = agg_df['dataset_name'] == cell_type
