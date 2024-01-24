@@ -78,11 +78,14 @@ def deeppridict(pegdataframe, models_lst_dict, model_type='base_90k'):
 
     deepdf = pegdataframe[deepdfcols].copy()
     # deepdf.insert(1, 'seq_id', list(range(len(deepdf))))
-    deepdf['protospacerlocation_only_initial'] = deepdf['protospacerlocation_only_initial'].apply(lambda x: str(x))
-    deepdf['PBSlocation'] = deepdf['PBSlocation'].apply(lambda x: str(x))
-    deepdf['RT_initial_location'] = deepdf['RT_initial_location'].apply(lambda x: str(x))
-    deepdf['RT_mutated_location'] = deepdf['RT_mutated_location'].apply(lambda x: str(x))
-    deepdf['deepeditposition_lst'] = deepdf['deepeditposition_lst'].apply(lambda x: str(x))
+    
+    for colname in ['protospacerlocation_only_initial', 
+                    'PBSlocation',
+                    'RT_initial_location',
+                    'RT_mutated_location',
+                    'deepeditposition_lst'
+                   ]:
+        deepdf[colname] = deepdf[colname].astype('str')
 
     # set mt for deletions to 0:
     deepdf['edited_base_mt'] = deepdf.apply(lambda x: 0 if x.Correction_Type == 'Deletion' else x.edited_base_mt,
@@ -161,10 +164,13 @@ def get_cell_types(model_type):
 if __name__ == "__main__":
     tmodels = ['base_90k','base_390k']
     for model_type in tmodels:
-        # do 5-fold predictions
+        # do 5-fold predictions 
         run_ids = [0,1,2,3,4]
         models_lst_dict = load_pridict_model(run_ids = run_ids, model_type = model_type)
         pridict2_premadedf = pd.read_csv('input/20240113_librarydiv_df_batchfile_with_adapted_wide_initial_target.csv')
+        # assign a unique id to each row in the dataframe
+        pridict2_premadedf['seq_id'] = [f'seq_{i}' for i in range(pridict2_premadedf.shape[0])]
+
         all_avg_preds = deeppridict(pridict2_premadedf, models_lst_dict, model_type)
         print('all_avg_preds:\n', all_avg_preds)
 
@@ -172,7 +178,7 @@ if __name__ == "__main__":
 
         #########
         # this block is used to take average prediction from ensemble of models 
-        # in case we have separate modlels, each with multiple trainning runs then we do not need it
+        # in case we have separate models, each with multiple trainning runs then we do not need it
         # we simply collect the average performance prediction using `agg_df = all_avg_preds[model_type]`
         #########
                 
@@ -190,7 +196,15 @@ if __name__ == "__main__":
         # print('agg_df:\n', agg_df)
         for cell_type in cell_types:
             cond  = agg_df['dataset_name'] == cell_type
-            avg_edited_eff = agg_df.loc[cond, 'pred_averageedited'].values*100
-            pridict2_premadedf.insert(len(pridict2_premadedf.columns), f'{model_type}_editing_Score_deep_{cell_type}', avg_edited_eff)
+            tmp_df = agg_df.loc[cond, ['seq_id', 'pred_averageedited']].copy()
+            newcolname = f'{model_type}_editing_Score_deep_{cell_type}'
+            tmp_df[newcolname] = tmp_df['pred_averageedited']*100
+            pridict2_premadedf = pd.merge(pridict2_premadedf,
+                                          tmp_df[['seq_id', newcolname]],
+                                          how='inner',
+                                          left_on=['seq_id'],
+                                          right_on=['seq_id'])
+        
+        
         pridict2_premadedf.to_csv(f'predictions/20240117_libdiverse_real_long_wide_target_with_{model_type}_model_predictions_5foldaverage.csv', index=False)
     
