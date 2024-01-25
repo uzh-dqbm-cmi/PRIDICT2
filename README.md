@@ -84,7 +84,7 @@ The easiest way to install and manage Python packages on various OS platforms is
   -  `--sequence`: target sequence to edit in quotes (format: `"xxxxxxxxx(a/g)xxxxxxxxxx"`; minimum of 100 bases up and downstream of brackets are needed; put unchanged edit-flanking bases *outside* of brackets (e.g. xxxT(a/g)Cxxx instead of xxx(TAC/TGC)xxx)
   ####  Optional:
   -  `--output-dir`: output directory where results are dumped on disk (default: `./predictions`; directory must already exist before running)
-  -  `--use-5folds`: Use all 5-folds trained models. Default is to use fold-1 model
+  -  `--use_5folds`: Use all 5-folds trained models. Default is to use fold-1 model
   -  `--cores`: Number of cores to use for multiprocessing. Maximum 3 cores due to memory limitations. Default value 0 uses 3 cores if available.
   -  `--nicking`: Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction ([Kim et al. 2019](https://www.science.org/doi/10.1126/sciadv.aax9249)).
   -  `--ngsprimer`: Additionally, design NGS primers for edit based on [Primer3](https://primer3.org/) design.
@@ -100,8 +100,7 @@ python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence 'GCCTGGA
   -  `--input-dir` : directory where the input csv file is found on disk
   -  `--output-dir`: directory on disk where to dump results (default: `./predictions`)
   -  `--output-fname`: output filename used for the saved results
-  -  `--combine-results`: Compile all results in one dataframe
-  -  `--use-5folds`: Use all 5-folds trained models. Default is to use fold-1 model
+  -  `--use_5folds`: Use all 5-folds trained models. Default is to use fold-1 model
   -  `--cores`: Number of cores to use for multiprocessing. Maximum 3 cores due to memory limitations. Default value 0 uses 3 cores if available.
   -  `--nicking`: Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction ([Kim et al. 2019](https://www.science.org/doi/10.1126/sciadv.aax9249)).
   -  `--ngsprimer`: Additionally, design NGS primers for edit based on [Primer3](https://primer3.org/) design.
