@@ -81,7 +81,7 @@ The easiest way to install and manage Python packages on various OS platforms is
 ### Running PRIDICT2.0 in 'manual' mode:
   ####  Required:
   -  `--sequence-name`: name of the sequene (i.e. unique id for the sequence)
-  -  `--sequence`: target sequence to edit in quotes (format: `"xxxxxxxxx(a/g)xxxxxxxxxx"`; minimum of 100 bases up and downstream of brackets are needed; put unchanged edit-flanking bases *outside* of brackets (e.g. xxxT(a/g)Cxxx instead of xxx(TAC/TGC)xxx)
+  -  `--sequence`: target sequence to edit in quotes (format: `"xxxxxxxxx(a/g)xxxxxxxxxx"`; minimum of 100 bases up and downstream of parentheses are needed; put unchanged edit-flanking bases *outside* of parentheses (e.g. xxxT(a/g)Cxxx instead of xxx(TAC/TGC)xxx)
   ####  Optional:
   -  `--output-dir`: output directory where results are dumped on disk (default: `./predictions`; directory must already exist before running)
   -  `--use_5folds`: Use all 5-folds trained models. Default is to use fold-1 model
