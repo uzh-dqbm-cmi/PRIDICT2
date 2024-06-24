@@ -4,7 +4,7 @@
 
 ## Overview
 
-[PRIDICT2.0](https://www.biorxiv.org/content/10.1101/2023.10.09.561414v1) is an advanced version of the original [PRIDICT](https://rdcu.be/c3IM5) model designed for predicting the efficiency of prime editing guide RNAs. This repository allows you to run the model locally. For details on advancements over the original model, refer to our [BioRxiv preprint](https://www.biorxiv.org/content/10.1101/2023.10.09.561414v1).
+[PRIDICT2.0](https://rdcu.be/dLu0f) is an advanced version of the original [PRIDICT](https://rdcu.be/c3IM5) model designed for predicting the efficiency of prime editing guide RNAs. This repository allows you to run the model locally. For details on advancements over the original model, refer to our published study ([Mathis et al., Nature Biotechnology, 2024](https://rdcu.be/dLu0f)) and the initial [BioRxiv preprint](https://www.biorxiv.org/content/10.1101/2023.10.09.561414v1).
 
 ## Complementary Model
 
@@ -24,7 +24,7 @@ For questions or suggestions, please either:
 ## Citation
 
 If find our work useful for your research please cite:
-- [Mathis et al., BioRxiv, 2023](https://www.biorxiv.org/content/10.1101/2023.10.09.561414v1) (PRIDICT2.0)
+- [Mathis et al., Nature Biotechnology, 2024](https://rdcu.be/dLu0f) (PRIDICT2.0)
 - [Mathis & Allam et al., Nature Biotechnology, 2023](https://rdcu.be/c3IM5) (PRIDICT)
 
 
