@@ -348,7 +348,7 @@ def create_datatensor(data_df, proc_seq_init_df, num_init_cols,  proc_seq_mut_df
     if len(y_ref):
         # y_score = torch.from_numpy(data_df['y'].values).reshape(-1,1)
         ycols = [tcol for tcol in y_ref if tcol in data_df]
-        print('ycols:', ycols)
+        # print('ycols:', ycols)
         y_score = torch.from_numpy(data_df[ycols].values)
     else:
         y_score = None
@@ -472,10 +472,10 @@ def validate_partitions(data_partitions, sample_ids, valid_set_portion=0.1, test
         te_val = set(te_ids).intersection(val_ids)
         
         tr_size = len(tr_ids) + len(val_ids)
-        # assert there is no overlap among train and test partition within a fold
-        print('expected validation set size:', valid_set_portion*tr_size, '; actual validation set size:', len(val_ids))
-        print('expected test set size:', test_set_portion*num_pts, '; actual test set size:', len(te_ids))
-        print()
+        # rough estimates of dataset size (it will not be exact as we are using grouped data and not all samples are independent)
+        # print('expected validation set size:', valid_set_portion*tr_size, '; actual validation set size:', len(val_ids))
+        # print('expected test set size:', test_set_portion*num_pts, '; actual test set size:', len(te_ids))
+        # print()
         # assert there is no interesection between dataset types within a fold
         for s in (tr_val, tr_te, te_val):
             assert len(s) == 0
