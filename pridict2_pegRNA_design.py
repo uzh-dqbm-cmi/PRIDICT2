@@ -1083,8 +1083,9 @@ if __name__ == "__main__":
             ngsprimer=True
         else:
             ngsprimer=False
-        
-        run_processing_parallel(df, out_dir, fname, num_proc_arg, nicking, ngsprimer, run_ids=run_ids)
+        log_entries = []
+
+        run_processing_parallel(df, out_dir, fname, num_proc_arg, nicking, ngsprimer, run_ids, log_entries)
 
     elif args.command == 'batch':
         print('Running in batch mode:')

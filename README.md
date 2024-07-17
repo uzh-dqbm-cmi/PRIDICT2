@@ -4,7 +4,7 @@
 
 ## Overview
 
-[PRIDICT2.0](https://www.biorxiv.org/content/10.1101/2023.10.09.561414v1) is an advanced version of the original [PRIDICT](https://rdcu.be/c3IM5) model designed for predicting the efficiency of prime editing guide RNAs. This repository allows you to run the model locally. For details on advancements over the original model, refer to our [BioRxiv preprint](https://www.biorxiv.org/content/10.1101/2023.10.09.561414v1).
+[PRIDICT2.0](https://rdcu.be/dLu0f) is an advanced version of the original [PRIDICT](https://rdcu.be/c3IM5) model designed for predicting the efficiency of prime editing guide RNAs. This repository allows you to run the model locally. For details on advancements over the original model, refer to our published study ([Mathis et al., Nature Biotechnology, 2024](https://rdcu.be/dLu0f)) and the initial [BioRxiv preprint](https://www.biorxiv.org/content/10.1101/2023.10.09.561414v1).
 
 ## Complementary Model
 
@@ -12,7 +12,7 @@
 
 ## Resources
 
-- **Supplementary Files**: [Access Here](xxx)
+- **Supplementary Files**: [Access Here](https://github.com/Schwank-Lab/epridict/tree/supplementary_files)
 - **Web Application**: For an online version of PRIDICT2.0, visit [our webapp](https://pridict.it/).
 
 ## Contact
@@ -24,7 +24,7 @@ For questions or suggestions, please either:
 ## Citation
 
 If find our work useful for your research please cite:
-- [Mathis et al., BioRxiv, 2023](https://www.biorxiv.org/content/10.1101/2023.10.09.561414v1) (PRIDICT2.0)
+- [Mathis et al., Nature Biotechnology, 2024](https://rdcu.be/dLu0f) (PRIDICT2.0)
 - [Mathis & Allam et al., Nature Biotechnology, 2023](https://rdcu.be/c3IM5) (PRIDICT)
 
 
@@ -50,13 +50,13 @@ The easiest way to install and manage Python packages on various OS platforms is
     conda activate pridict2
 
     # pytorch has to be installed separately here:
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+    pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cpu
     
     	### ONLY FOR M1 (or newer) Mac you need to additionally run the following conda install command (tensorflow): 
     	conda install conda-forge::tensorflow
     	# optional (only if encountering error with libiomp5.dylib on MacOS):
     	pip uninstall numpy
-    	pip install numpy==1.22.1
+    	pip install numpy==1.22.1 # or pip install numpy
     	###
     	
 	
@@ -84,7 +84,7 @@ The easiest way to install and manage Python packages on various OS platforms is
   -  `--sequence`: target sequence to edit in quotes (format: `"xxxxxxxxx(a/g)xxxxxxxxxx"`; minimum of 100 bases up and downstream of brackets are needed; put unchanged edit-flanking bases *outside* of brackets (e.g. xxxT(a/g)Cxxx instead of xxx(TAC/TGC)xxx)
   ####  Optional:
   -  `--output-dir`: output directory where results are dumped on disk (default: `./predictions`; directory must already exist before running)
-  -  `--use-5folds`: Use all 5-folds trained models. Default is to use fold-1 model
+  -  `--use_5folds`: Use all 5-folds trained models. Default is to use fold-1 model
   -  `--cores`: Number of cores to use for multiprocessing. Maximum 3 cores due to memory limitations. Default value 0 uses 3 cores if available.
   -  `--nicking`: Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction ([Kim et al. 2019](https://www.science.org/doi/10.1126/sciadv.aax9249)).
   -  `--ngsprimer`: Additionally, design NGS primers for edit based on [Primer3](https://primer3.org/) design.
@@ -100,8 +100,7 @@ python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence 'GCCTGGA
   -  `--input-dir` : directory where the input csv file is found on disk
   -  `--output-dir`: directory on disk where to dump results (default: `./predictions`)
   -  `--output-fname`: output filename used for the saved results
-  -  `--combine-results`: Compile all results in one dataframe
-  -  `--use-5folds`: Use all 5-folds trained models. Default is to use fold-1 model
+  -  `--use_5folds`: Use all 5-folds trained models. Default is to use fold-1 model
   -  `--cores`: Number of cores to use for multiprocessing. Maximum 3 cores due to memory limitations. Default value 0 uses 3 cores if available.
   -  `--nicking`: Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction ([Kim et al. 2019](https://www.science.org/doi/10.1126/sciadv.aax9249)).
   -  `--ngsprimer`: Additionally, design NGS primers for edit based on [Primer3](https://primer3.org/) design.

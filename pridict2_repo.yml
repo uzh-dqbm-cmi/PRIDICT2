@@ -28,5 +28,5 @@ dependencies:
       - seaborn==0.12.2
       - tensorflow==2.13.0
       - tensorflow-estimator==2.13.0
-      - tensorflow-io-gcs-filesystem==0.32.0
+      #- tensorflow-io-gcs-filesystem==0.32.0
       - tqdm==4.65.0
