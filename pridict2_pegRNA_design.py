@@ -27,6 +27,12 @@ RToverhanglengthrange = range(3,20)
 # set maximum distance of edit to PAM; longer distance leads to longer prediction time; default 25
 windowsize_max=25
 
+# run number to run
+run_num = 0
+
+# set maximum length of deletion/insertion/replacement; performance is validated in the paper up to 15bp; default 40
+length_limit=40
+
 # Define whether DeepSpCas9 prediction should be performed for nicking guides; default True
 # Changing value to False will accelerate prediction by adding dummy prediction values to nicking guides.
 # Does not influence predictions performed by PRIDICT model (only affects nicking guides)
@@ -56,9 +62,10 @@ import primer3
 from pridict.pridictv2.utilities import *
 from pridict.pridictv2.dataset import *
 from pridict.pridictv2.predict_outcomedistrib import *
-from trained_models.DeepCas9_TestCode import runprediction
 
-    
+if deepcas9_trigger:
+    from trained_models.DeepCas9_TestCode import runprediction
+
 
 def primesequenceparsing(sequence: str) -> object:
     """
@@ -81,7 +88,7 @@ def primesequenceparsing(sequence: str) -> object:
     if sequence.count('(') != 1:
         print(sequence)
         print('More or less than one bracket found in sequence! Please check your input sequence.')
-        raise ValueError
+        raise ValueError("Invalid sequence format: Expected exactly one set of parentheses to indicate the edit.")
 
     five_prime_seq = sequence.split('(')[0]
     three_prime_seq = sequence.split(')')[1]
@@ -93,9 +100,11 @@ def primesequenceparsing(sequence: str) -> object:
 
         # edit flanking bases should *not* be included in the brackets
         if (original_base[0] == edited_base[0]) or (original_base[-1] == edited_base[-1]):
+            if original_base[0] == "-":
+                raise ValueError(f"Invalid sequence format: '({original_base}/{edited_base})' Deletion or insertion expected.")
             print(sequence)
             print('Flanking bases should not be included in brackets! Please check your input sequence.')
-            raise ValueError
+            raise ValueError("Invalid sequence format: Flanking bases should not be included in brackets. (E.g., NNNA(G/T)CNNN and not NNN(AGC/ATC)NNN.)")
     elif '+' in sequence_set:  #insertion
         original_base = '-'
         edited_base = sequence.split('+')[1].split(')')[0]
@@ -109,14 +118,20 @@ def primesequenceparsing(sequence: str) -> object:
         if edited_base != '-':
             mutation_type = 'Insertion'
             correction_length = len(edited_base)
+            if correction_length > length_limit:
+                print(f'The chosen insertion is {correction_length}bp long. Only insertions up to {length_limit}bp are currently supported by default! Please check your input sequence.')
+                raise ValueError(f"Invalid insertion length ({correction_length}): Only insertions up to {length_limit}bp are currently supported by default.")
         else:
             print(sequence)
-            raise ValueError
+            raise ValueError("Invalid sequence format: Deletion or insertion expected.")
     else:
         original_seq = five_prime_seq + original_base + three_prime_seq
         if edited_base == '-':
             mutation_type = 'Deletion'
             correction_length = len(original_base)
+            if correction_length > length_limit:
+                print(f'The chosen deletion is {correction_length}bp long. Only deletions up to {length_limit}bp are currently supported by default! Please check your input sequence.')
+                raise ValueError(f"Invalid deletion length ({correction_length}): Only deletions up to {length_limit}bp are currently supported by default.")
         elif len(original_base) == 1 and len(edited_base) == 1:
             if isDNA(original_base) and isDNA(edited_base):  # check if only AGCT is in bases
                 mutation_type = '1bpReplacement'
@@ -124,21 +139,24 @@ def primesequenceparsing(sequence: str) -> object:
             else:
                 print(sequence)
                 print('Non DNA bases found in sequence! Please check your input sequence.')
-                raise ValueError
+                raise ValueError("Non-DNA bases detected in sequence. Please use only ATGC.")
         elif len(original_base) > 1 or len(edited_base) > 1:
             if isDNA(original_base) and isDNA(edited_base):  # check if only AGCT is in bases
                 mutation_type = 'MultibpReplacement'
                 if len(original_base) == len(
                         edited_base):  # only calculate correction length if replacement does not contain insertion/deletion
                     correction_length = len(original_base)
+                    if correction_length > length_limit:
+                        print(f'The chosen replacement is {correction_length}bp long. Only replacements up to {length_limit}bp are currently supported by default! Please check your input sequence.')
+                        raise ValueError(f"Invalid replacement length ({correction_length}): Only replacements up to {length_limit}bp are currently supported by default.")
                 else:
                     print(sequence)
-                    print('Only 1bp replacements or replacements of equal length (before edit/after edit) are supported! Please check your input sequence.')
-                    raise ValueError
+                    print('Only 1bp replacements or replacements of equal length (before edit/after edit) are currently supported! Please check your input sequence.')
+                    raise ValueError("Only 1bp replacements or replacements of equal length (before edit/after edit) are currently supported.")
             else:
                 print(sequence)
                 print('Non DNA bases found in sequence! Please check your input sequence.')
-                raise ValueError
+                raise ValueError("Non-DNA bases detected in sequence. Please use only ATGC.")
 
     if edited_base == '-':
         edited_seq = five_prime_seq + three_prime_seq
@@ -148,7 +166,7 @@ def primesequenceparsing(sequence: str) -> object:
     if isDNA(edited_seq) and isDNA(original_seq):  # check whether sequences only contain AGCT
         pass
     else:
-        raise ValueError
+        raise ValueError("Non-DNA bases detected in sequence. Please use only ATGC.")
 
     basebefore_temp = five_prime_seq[
                       -1:]  # base before the edit, could be changed with baseafter_temp if Rv strand is targeted (therefore the "temp" attribute)
@@ -180,7 +198,7 @@ def isDNA(sequence):
         onlyDNA = False
         print('Non-DNA bases detected. Please use ATGC.')
         print(sequence)
-        raise ValueError
+        raise ValueError(f"Non-DNA bases detected: {diff_set}. Please use only ATGC.")
     return onlyDNA
 
 def melting_temperature(protospacer, extension, RT, RToverhang, PBS, original_base, edited_base):
@@ -436,6 +454,7 @@ def primerdesign(seq):
 def parallel_batch_analysis(inp_dir, inp_fname, out_dir, out_fname, num_proc_arg, nicking, ngsprimer, run_ids=[0]):
     """Perform pegRNA predictions in batch-mode."""
     batchsequencedf = pd.read_csv(os.path.join(inp_dir, inp_fname))
+    log_entries = []
     if 'editseq' in batchsequencedf:
         if 'sequence_name' in batchsequencedf:
             if len(batchsequencedf.sequence_name.unique()) == len(batchsequencedf.sequence_name):
@@ -443,24 +462,50 @@ def parallel_batch_analysis(inp_dir, inp_fname, out_dir, out_fname, num_proc_arg
                 try:
                     # make sequence_name column to string even if there are only numbers
                     batchsequencedf['sequence_name'] = batchsequencedf['sequence_name'].astype(str)
-                    run_processing_parallel(batchsequencedf, out_dir, out_fname, num_proc_arg, nicking, ngsprimer, run_ids=run_ids)
-                except ValueError as ve:
-                    print(f"ValueError: {ve}")
+                    run_processing_parallel(batchsequencedf, out_dir, out_fname, num_proc_arg, nicking, ngsprimer, run_ids, log_entries)
+                except Exception as e:
+                    print(f"Exception: {e}")
                     print('***\n Error :( Check your input format is compatible with PRIDICT! More information in input box on https://pridict.it/ ...\n***\n')
-
+                    for _, row in batchsequencedf.iterrows():
+                        log_entries.append({'sequence_name': row['sequence_name'], 'editseq': row['editseq'], 'log': str(e)})
             else:
-                print('Please check your input-file! (Names not unique.')
+                print('Please check your input-file! (Column "sequence_name" is not unique.)')
+                # Log error for unique names
+                for _, row in batchsequencedf.iterrows():
+                    log_entries.append({'sequence_name': row['sequence_name'], 'editseq': row['editseq'], 'log': 'Column sequence_name not unique.'})
         else:
-            print('Please check your input-file! (Missing "sequence_name" column.')
+            print('Please check your input-file! (Missing "sequence_name" column.)')
+            # Log error for missing sequence_name column
+            for _, row in batchsequencedf.iterrows():
+                log_entries.append({'sequence_name': 'Missing "sequence_name" column.', 'editseq': row['editseq'], 'log': 'Missing "sequence_name" column.'})
 
     else:
-        print('Please check your input-file! (Missing "editseq" column.')
+        print('Please check your input-file! (Missing "editseq" column.)')
+        # Log error for missing editseq column
+        for _, row in batchsequencedf.iterrows():
+            log_entries.append({'sequence_name': row['sequence_name'], 'editseq': 'Missing "editseq" column', 'log': 'Missing "editseq" column.'})
+
+    # Save log entries to CSV
+    log_df = pd.DataFrame(log_entries)
+
+    # Get current date and time
+    current_time = time.strftime("%Y%m%d_%H%M")
+
+    # Create the log filename with date and time
+    log_filename = f"{current_time}_{inp_fname[:-4]}_batch_logfile.csv"
+
+    # Ensure the log directory exists
+    log_dir = os.path.join(out_dir, '../log')
+    os.makedirs(log_dir, exist_ok=True)
+    
+    # Save the log file in the specified directory
+    log_df.to_csv(os.path.join(out_dir, '../log', log_filename), index=False)
 
 def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
                  editor='PE2-NGG', PBSlength_variants=PBSlengthrange, windowsize=windowsize_max,
                  RTseqoverhang_variants=RToverhanglengthrange):
     """Find pegRNAs and prediction scores for a set desired edit."""
-    
+    error_message = None
     try:
         if type(dfrow['editseq']) == pd.Series: # case of dfrow is a group
             sequence = dfrow['editseq'].values[0]
@@ -474,7 +519,7 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
             sequence)
         if (editposition_left < 99) or (editposition_right< 99):
             print('Less than 100bp flanking sequence! Check your input.')
-            raise ValueError
+            raise ValueError("Insufficient flanking sequence: Ensure at least 100 bp flanking the edit on both sides.")
             
         sequence = sequence.upper()
         PAM, numberN, variant, protospacerlength, PAM_side, primescaffoldseq, PAM_length = editorcharacteristics(editor)
@@ -554,7 +599,7 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
             correction_type = 'Replacement'
         else:
             print('Editing type currently not supported for pegRNA prediction.')
-            raise ValueError
+            raise ValueError("Editing type currently not supported for pegRNA prediction.")
 
         target_strandloop_start_time = time.time()
         for target_strand in ['Fw', 'Rv']:
@@ -828,47 +873,14 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
 
         if len(pegdataframe) < 1:
             print('\n***\nNo PAM (NGG) found in proximity of edit!\n***\n')
-            raise ValueError
+            raise ValueError(f"No PAM (NGG) sequence found within the specified proximity to the edit (where nick position is maximum {windowsize_max} bases away from edit).")
                 
         start_time = time.time()
-
-        
         all_avg_preds = deeppridict(pegdataframe, models_list)
-
-
         # Extracting cell types from model
         cell_types = get_cell_types()
-
         # Inserting common columns outside the loop
         pegdataframe.insert(len(pegdataframe.columns), 'sequence_name', name)
-
-
-        # average_editing_scores = {cell_type: [] for cell_type in cell_types}
-        # # average_unintended_scores = {cell_type: [] for cell_type in cell_types}
-
-        # for model_id, pred_df in all_avg_preds.items():
-        #     # Looping over each cell type
-        #     for cell_type in cell_types:
-        #         # Filtering the dataframe based on cell type
-        #         pred_df_cell = pred_df[pred_df['dataset_name'] == cell_type]
-                
-        #         # Calculating the editing prediction lists
-        #         editingpredictionlist = (pred_df_cell['pred_averageedited']*100).tolist()
-        #         # unintendededitingpredictionlist = (pred_df_cell['pred_averageindel']*100).tolist()
-
-        #         average_editing_scores[cell_type].append(editingpredictionlist)
-        #         # average_unintended_scores[cell_type].append(unintendededitingpredictionlist)
-
-        #         # Inserting cell-type specific columns into pegdataframe
-        #         # pegdataframe.insert(len(pegdataframe.columns), f'{model_id}_editing_Score_deep_{cell_type}', editingpredictionlist)
-        #         # pegdataframe.insert(len(pegdataframe.columns), f'{model_id}_unintended_Score_deep_{cell_type}', unintendededitingpredictionlist)
-
-        # for cell_type in cell_types:
-        #     average_editing = np.mean(average_editing_scores[cell_type], axis=0).tolist()
-        #     # average_unintended = np.mean(average_unintended_scores[cell_type], axis=0).tolist()
-
-        #     pegdataframe.insert(len(pegdataframe.columns), f'PRIDICT2_0_editing_Score_deep_{cell_type}', average_editing)
-        #     # pegdataframe.insert(len(pegdataframe.columns), f'PRIDICT2_0_unintended_Score_deep_{cell_type}', average_unintended)
 
         tmp = [all_avg_preds[model_id] for model_id in all_avg_preds]
         # seq_id, dataset_name, model, predictions cols
@@ -917,8 +929,12 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
     except Exception as e:
         print('-- Exception occured --')
         print(e)
+        error_message = e
     finally:
-        queue.put(pindx)
+        if error_message is None:
+            queue.put((pindx, 'Prediction successful!'))
+        else:
+            queue.put((pindx, error_message))
 
 def compute_average_predictions(df, grp_cols=['seq_id', 'dataset_name']):
     tcols = ['pred_averageedited', 'pred_averageunedited', 'pred_averageindel']
@@ -940,7 +956,7 @@ def fix_mkl_issue():
         print('setting MKL_THREADING_LAYER = GNU')
         os.environ['MKL_THREADING_LAYER'] = 'GNU'
 
-def run_processing_parallel(df, pred_dir, fname, num_proc_arg, nicking, ngsprimer, run_ids=[0]):
+def run_processing_parallel(df, pred_dir, fname, num_proc_arg, nicking, ngsprimer, run_ids, log_entries):
 
     fix_mkl_issue() # comment this 
     queue = mp.Queue()
@@ -977,7 +993,9 @@ def run_processing_parallel(df, pred_dir, fname, num_proc_arg, nicking, ngsprime
     print("*"*25)
     for q_i in range(num_rows):
         join_q_process(q_processes[q_i])
-        released_proc_num = queue.get()
+        released_proc_num, error_message = queue.get()
+        if error_message:
+            log_entries.append({'sequence_name': df.iloc[released_proc_num]['sequence_name'], 'editseq': df.iloc[released_proc_num]['editseq'], 'log': error_message})
         # print("released_process_num:", released_proc_num)
         q_processes[q_i] = None # free resources ;)
         if(spawned_processes < num_rows):
@@ -997,69 +1015,12 @@ def run_processing_parallel(df, pred_dir, fname, num_proc_arg, nicking, ngsprime
             q_processes.append(q_process)
             spawn_q_process(q_process)
             spawned_processes = spawned_processes + 1
-    
-    # # assemble all sequence dataframes into one --- optional
-    # if combine_dfs:
-    #     combined_df = assemble_df(seqnames_lst, 'pegRNA_Pridict_full', pred_dir)
-    #     remove_col(combined_df, 'Unnamed: 0')
-        
-    #     combined_df.to_csv(os.path.join(pred_dir, f'{fname}_pegRNA_Pridict_full.csv'), index=False)
-    #     print("Columns in combined_df:", combined_df.columns)
-
-    #     cols = get_shortdf_colnames()
-    #     print("Intended columns:", cols)
-    #     pegdataframe_short = combined_df[cols]
-    #     pegdataframe_short.to_csv(os.path.join(pred_dir, f'{fname}_pegRNA_Pridict_Scores.csv'), index=False)
-
-    #     combined_bestpegdf = assemble_df(seqnames_lst, 'best_pegdf', pred_dir)
-    #     print("First few rows of combined_df:", combined_df.head())
-
-    #     combined_bestpegdf.to_csv(os.path.join(pred_dir, f'{fname}_best_pegdf.csv'), index=False)
-
 
 def remove_col(df, colname):
     if colname in df:
         del df[colname]
 def get_cell_types():
     return ['HEK', 'K562']
-
-# def get_shortdf_colnames():
-#     models = ['PRIDICT2_0']  # List of models you are using
-#     cell_types = get_cell_types()
-#     base_cols = [
-#         'Spacer-Oligo-FW', 'Spacer-Oligo-RV', 'Extension-Oligo-FW',
-#         'Extension-Oligo-RV', 'Original_Sequence', 'Edited-Sequences',
-#         'Target-Strand', 'Mutation_Type', 'Correction_Type', 'Correction_Length',
-#         'Editing_Position', 'PBSlength', 'RToverhanglength', 'RTlength',
-#         'EditedAllele', 'OriginalAllele', 'Spacer-Sequence',
-#         'PBSrevcomp', 'RTseqoverhangrevcomp', 'RTrevcomp',
-#         'pegRNA', 'Editor_Variant', 'sequence_name'
-#     ]
-    
-#     # Add PRIDICT scores for each model and cell type
-#     pridict_cols = []
-#     for model in models:
-#         for cell_type in cell_types:
-#             pridict_cols.append(f'{model}_editing_Score_deep_{cell_type}')
-#             # pridict_cols.append(f'{model}_unintended_Score_deep_{cell_type}')
-    
-#     # Add rank columns for each cell type
-#     rank_cols = [f'{cell_type}_rank' for cell_type in cell_types]
-    
-#     return base_cols + pridict_cols + rank_cols
-
-# def assemble_df(seqnames_lst, namesuffix, df_dir):
-#     df_lst = []
-#     for seq_name in seqnames_lst:
-#         fpath = os.path.join(df_dir, f'{seq_name}_{namesuffix}.csv')
-#         if os.path.isfile(fpath):
-#             df =  pd.read_csv(fpath)
-#             df['sequence_name'] = seq_name
-#             df_lst.append(df)
-#         else:
-#             print(f'File {fpath} not found')
-#     combined_df = pd.concat(df_lst, axis=0)
-#     return combined_df
 
 
 def spawn_q_process(q_process):
@@ -1086,11 +1047,11 @@ if __name__ == "__main__":
     manual_m.add_argument("--nicking", action='store_true', help="Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction.")
     manual_m.add_argument("--ngsprimer", action='store_true', help="Additionally, design NGS primers for edit based on Primer3 design.")
 
-
+    batch_m.add_argument("--input-dir", type=str, default='./input', help="Input directory where the input csv file is found on disk")
     batch_m.add_argument("--input-fname", type=str, required=True, help="Input filename - name of csv file that has two columns {editseq, sequence_name}. See batch_template.csv in the ./input folder ")
+    batch_m.add_argument("--output-dir", type=str, default='./predictions', help="Output directory where results are dumped on disk")    
     batch_m.add_argument("--output-fname", type=str, help="Output filename for the resulting dataframe. If not specified, the name of the input file will be used")
     batch_m.add_argument("--use_5folds", action='store_true', help="Use all 5-folds trained models (and average output). Default is to use fold-1 model")
-    # batch_m.add_argument("--combine_results", action='store_true', help="Compile all results into one dataframe")
     batch_m.add_argument("--nicking", action='store_true', help="Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction.")
     batch_m.add_argument("--ngsprimer", action='store_true', help="Additionally, design NGS primers for edit based on Primer3 design.")
     batch_m.add_argument("--cores", type=int, default=0, help="Number of cores to use for multiprocessing. Default value uses 3 available cores. Maximum 3 cores to prevent memory issues.")
@@ -1128,12 +1089,18 @@ if __name__ == "__main__":
     elif args.command == 'batch':
         print('Running in batch mode:')
 
-        inp_dir = os.path.join(os.path.dirname(__file__), './input')
+        if args.input_dir != './input':
+            inp_dir = create_directory(args.input_dir, os.getcwd())
+        else:
+            inp_dir = os.path.join(os.path.dirname(__file__), args.input_dir)
         print('input directory:', inp_dir)
 
         inp_fname = args.input_fname
 
-        out_dir = os.path.join(os.path.dirname(__file__), './predictions')
+        if args.output_dir != './predictions':
+            out_dir = create_directory(args.output_dir, os.getcwd())
+        else:
+            out_dir = os.path.join(os.path.dirname(__file__), args.output_dir)
         print('output directory:', out_dir)
 
         if args.use_5folds:
