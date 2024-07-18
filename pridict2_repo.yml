@@ -1,6 +1,6 @@
 # torch has to be installed separately after installing the conda environment!
 # install torch with the following command after activating the environment:
-# pip install torch==2.1.1+cpu torchvision==0.16.1+cpu torchaudio==2.1.1+cpu --index-url https://download.pytorch.org/whl/cpu
+# pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cpu
 name: pridict2
 channels:
   - anaconda
