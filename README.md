@@ -108,3 +108,23 @@ python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence "GCCTGGA
  python pridict2_pegRNA_design.py batch --input-fname batch_template.csv --output-fname batchseqs
 ``` 
 --------------------------
+
+### Prediction of pegRNAs with silent bystander edits
+
+`PRIDICT2.0`'s enhanced ability to predict multi-bp edits allows researchers to improve their outcomes by incorporating silent bystander edits into their targets. These edits can potentially boost editing efficiencies, particularly in MMR proficient contexts.
+
+To facilitate this process, we provide a Jupyter Notebook `notebook_silent_bystander_input.ipynb` in the `silentbystander_addon` folder. This notebook generates all possible `PRIDICT2.0` input sequences with silent bystanders up to 5bp up- and downstream of the edit.
+
+#### Requirements:
+- PRIDICT input sequence with 150 bp context on both sides of the edit
+- Input sequence must be in-frame (ORF_start = 0) if the edit and its context are within an exon
+- If not in an exon, still assume it is "in frame" and also keep the `in frame value` as `yes` if you do batch input file
+  --> to get all possible mutations for an intron/non-genic region, enter your input sequence in all ORF variants (3 for the fw strand; 3 for the rv strand) and run the batch mode.
+- PRIDICT2.0 conda environment
+
+#### Usage:
+1. Use the notebook or corresponding command line script to create an input batch file for `PRIDICT2.0` prediction with silent bystanders.
+2. Supports 1bp replacements and multi-bp replacements (not insertions/deletions).
+3. Input format: `PRIDICT2.0` format with 150bp flanking bases on both sides.
+4. Choose between manual (single mutation/edit) or batch (multiple inputs) functions.
+5. Run `PRIDICT2.0` in batch mode with the generated input sequences to obtain efficiency predictions.
