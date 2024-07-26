@@ -131,4 +131,5 @@ dmypy.json
 # orisenbazuru
 .DS_Store
 experiments
-notebooks
+dataset/proc_v2
+

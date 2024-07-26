@@ -50,7 +50,7 @@ The easiest way to install and manage Python packages on various OS platforms is
     conda activate pridict2
 
     # pytorch has to be installed separately here:
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+    pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cpu
     
     	### ONLY FOR M1 (or newer) Mac you need to additionally run the following conda install command (tensorflow): 
     	conda install conda-forge::tensorflow
@@ -61,7 +61,7 @@ The easiest way to install and manage Python packages on various OS platforms is
     	
 	
     # run desired PRIDICT2.0 command (manual or batch mode, described below)
-    python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence 'GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGGCTACGGCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC'
+    python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence "GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGGCTACGGCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC"
     # results are stored in 'predictions' folder
     ```
 
@@ -72,7 +72,7 @@ The easiest way to install and manage Python packages on various OS platforms is
     # activate the created environment
     conda activate pridict2
     # run desired PRIDICT2.0 command (manual or batch mode, described below)
-    python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence 'GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGGCTACGGCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC'
+    python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence "GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGGCTACGGCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC"
     # results are stored in 'predictions' folder
     ```
 
@@ -81,7 +81,7 @@ The easiest way to install and manage Python packages on various OS platforms is
 ### Running PRIDICT2.0 in 'manual' mode:
   ####  Required:
   -  `--sequence-name`: name of the sequene (i.e. unique id for the sequence)
-  -  `--sequence`: target sequence to edit in quotes (format: `"xxxxxxxxx(a/g)xxxxxxxxxx"`; minimum of 100 bases up and downstream of parentheses are needed; put unchanged edit-flanking bases *outside* of parentheses (e.g. xxxT(a/g)Cxxx instead of xxx(TAC/TGC)xxx)
+  -  `--sequence`: target sequence to edit in quotes (format: `"xxxxxxxxx(a/g)xxxxxxxxxx"`; minimum of 100 bases up and downstream of brackets are needed; put unchanged edit-flanking bases *outside* of brackets (e.g. xxxT(a/g)Cxxx instead of xxx(TAC/TGC)xxx)
   ####  Optional:
   -  `--output-dir`: output directory where results are dumped on disk (default: `./predictions`; directory must already exist before running)
   -  `--use_5folds`: Use all 5-folds trained models. Default is to use fold-1 model
@@ -89,7 +89,7 @@ The easiest way to install and manage Python packages on various OS platforms is
   -  `--nicking`: Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction ([Kim et al. 2019](https://www.science.org/doi/10.1126/sciadv.aax9249)).
   -  `--ngsprimer`: Additionally, design NGS primers for edit based on [Primer3](https://primer3.org/) design.
 ```shell
-python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence 'GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGGCTACGGCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC'
+python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence "GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGGCTACGGCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC"
 ``` 
 --------------------------
 

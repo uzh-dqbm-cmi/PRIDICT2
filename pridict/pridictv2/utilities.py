@@ -250,10 +250,10 @@ def build_predictions_df(seq_ids, true_score, pred_score, y_ref_names, dset_name
     df_dict.update(pred_scores_dict)
     predictions_df = pd.concat([seqid_inpseq_df, pd.DataFrame(df_dict)], axis=1)
 
-    print('pred.shape:', predictions_df.shape)
+    # print('pred.shape:', predictions_df.shape)
     if dset_names is not None:
         predictions_df.drop_duplicates(['seq_id', 'dataset_name'], inplace=True)
-        print('after removing duplicates -> pred.shape:', predictions_df.shape)
+        # print('after removing duplicates -> pred.shape:', predictions_df.shape)
 
     return predictions_df
 
