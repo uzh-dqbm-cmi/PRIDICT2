@@ -4,6 +4,7 @@ from os.path import exists
 from os import system
 
 import tensorflow.compat.v1 as tf
+from tensorflow.core.protobuf import rewriter_config_pb2
 import numpy as np
 import scipy.misc
 import scipy.stats
@@ -168,6 +169,8 @@ def runprediction(deepcas9seqlist, usecase):
     # TensorFlow config
     conf = tf.ConfigProto()
     conf.gpu_options.allow_growth = True
+    off = rewriter_config_pb2.RewriterConfig.OFF
+    conf.graph_options.rewrite_options.layout_optimizer = off
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     best_model_cv = 0.0
     best_model_list = []
