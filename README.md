@@ -51,14 +51,7 @@ The easiest way to install and manage Python packages on various OS platforms is
 
     # pytorch has to be installed separately here:
     pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cpu
-    
-    	### ONLY FOR M1 (or newer) Mac you need to additionally run the following conda install command (tensorflow): 
-    	conda install conda-forge::tensorflow
-    	# optional (only if encountering error with libiomp5.dylib on MacOS):
-    	pip uninstall numpy
-    	pip install numpy==1.22.1 # or pip install numpy
-    	###
-    	
+  	
 	
     # run desired PRIDICT2.0 command (manual or batch mode, described below)
     python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence "GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGGCTACGGCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC"
