@@ -242,9 +242,23 @@ def occurrences(string, sub):
         else:
             return count
 
+# Conditional import for runprediction (deepcas9); do not change
+runprediction = None
+
+# Add trained models to sys.path to be able to import DeepCas9_TestCode
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), 'trained_models'))
+
+
+def import_runprediction():
+    """Import runprediction function from DeepCas9_TestCode if not already imported."""
+    global runprediction
+    if runprediction is None:
+        from DeepCas9_TestCode import runprediction
 
 def deepcas9(deepcas9seqlist):
     """Perform DeepCas9 prediction on 30bp stretches of protospacer + targetseq for each protospacer."""
+    import_runprediction()
     usecase = 'commandline'
     deepcas9scorelist = runprediction(deepcas9seqlist, usecase)
     print('deepcas9 calculating...')
@@ -1053,7 +1067,6 @@ if __name__ == "__main__":
         
         if args.nicking:
             nicking=True
-            from trained_models.DeepCas9_TestCode import runprediction
         else:
             nicking=False
             
@@ -1102,7 +1115,6 @@ if __name__ == "__main__":
             
         if args.nicking:
             nicking=True
-            from trained_models.DeepCas9_TestCode import runprediction
         else:
             nicking=False
             
