@@ -947,18 +947,8 @@ def compute_average_predictions(df, grp_cols=['seq_id', 'dataset_name']):
 
 # editseq_test = 'GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGCTACCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC'
 
-def fix_mkl_issue():
-    # https://github.com/pytorch/pytorch/issues/37377
-    # https://github.com/IntelPython/mkl-service/issues/14
-    import mkl
-    a, b, __ = mkl.__version__.split('.')
-    if int(a) <=2 and int(b)<=3:
-        print('setting MKL_THREADING_LAYER = GNU')
-        os.environ['MKL_THREADING_LAYER'] = 'GNU'
-
 def run_processing_parallel(df, pred_dir, fname, num_proc_arg, nicking, ngsprimer, run_ids, log_entries):
 
-    fix_mkl_issue() # comment this 
     queue = mp.Queue()
     q_processes = []
     if num_proc_arg == 0:
