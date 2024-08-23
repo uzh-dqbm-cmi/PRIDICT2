@@ -33,11 +33,6 @@ run_num = 0
 # set maximum length of deletion/insertion/replacement; performance is validated in the paper up to 15bp; default 40
 length_limit=40
 
-# Define whether DeepSpCas9 prediction should be performed for nicking guides; default True
-# Changing value to False will accelerate prediction by adding dummy prediction values to nicking guides.
-# Does not influence predictions performed by PRIDICT model (only affects nicking guides)
-deepcas9_trigger=True
-
 ### end of parameter delcaration ###
 
 
@@ -62,9 +57,6 @@ import primer3
 from pridict.pridictv2.utilities import *
 from pridict.pridictv2.dataset import *
 from pridict.pridictv2.predict_outcomedistrib import *
-
-if deepcas9_trigger:
-    from trained_models.DeepCas9_TestCode import runprediction
 
 
 def primesequenceparsing(sequence: str) -> object:
@@ -253,16 +245,11 @@ def occurrences(string, sub):
 
 def deepcas9(deepcas9seqlist):
     """Perform DeepCas9 prediction on 30bp stretches of protospacer + targetseq for each protospacer."""
-    if deepcas9_trigger == True:
-        usecase = 'commandline'
-        deepcas9scorelist = runprediction(deepcas9seqlist, usecase)
-        print('deepcas9 calculating...')
-        deepcas9scorelist = [round(x, 2) for x in deepcas9scorelist]
-        return deepcas9scorelist
-    else:  # if deepcas9_trigger is set to false, just calculate dummy data for nicking guides.
-        print('deepcas9 calculating...')
-        deepcas9scorelist = [100.]*len(deepcas9seqlist)
-        return deepcas9scorelist
+    usecase = 'commandline'
+    deepcas9scorelist = runprediction(deepcas9seqlist, usecase)
+    print('deepcas9 calculating...')
+    deepcas9scorelist = [round(x, 2) for x in deepcas9scorelist]
+    return deepcas9scorelist
 
 
 def nickingguide(original_seq, PAMposition, protospacerlength):
@@ -1066,6 +1053,7 @@ if __name__ == "__main__":
         
         if args.nicking:
             nicking=True
+            from trained_models.DeepCas9_TestCode import runprediction
         else:
             nicking=False
             
@@ -1114,6 +1102,7 @@ if __name__ == "__main__":
             
         if args.nicking:
             nicking=True
+            from trained_models.DeepCas9_TestCode import runprediction
         else:
             nicking=False
             
