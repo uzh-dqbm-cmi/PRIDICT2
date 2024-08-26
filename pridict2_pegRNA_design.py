@@ -49,6 +49,7 @@ mp.set_start_method("spawn", force=True)
 import argparse
 import warnings
 from Bio import BiopythonDeprecationWarning
+from pathlib import Path
 
 warnings.filterwarnings("ignore", category=BiopythonDeprecationWarning)
 warnings.filterwarnings("ignore", "Function deprecated please use \"design_primers\" instead", category=UserWarning)
@@ -247,7 +248,12 @@ runprediction = None
 
 # Add trained models to sys.path to be able to import DeepCas9_TestCode
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), 'trained_models'))
+# Get the absolute path of the directory where the script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Construct the correct path to the 'trained_models' directory
+trained_models_path = os.path.join(script_dir, 'trained_models')
+# Append this path to sys.path
+sys.path.append(trained_models_path)
 
 
 def import_runprediction():
@@ -284,7 +290,7 @@ def get_prieml_model_template():
 def load_pridict_model(run_ids=[0]):
     """construct and return PRIDICT model along with model files directory """
     models_lst_dict = {}  # Initialize a dictionary to hold lists of models keyed by model_id
-    repo_dir = os.path.join(os.path.abspath('./'))
+    repo_dir = os.path.dirname(os.path.abspath(__file__))
     modellist = [
         ('PRIDICT1_1', 'pe_rnn_distribution_multidata', 'exp_2023-08-25_20-55-53'),
         ('PRIDICT1_2', 'pe_rnn_distribution_multidata', 'exp_2023-08-28_22-22-26')
@@ -496,11 +502,12 @@ def parallel_batch_analysis(inp_dir, inp_fname, out_dir, num_proc_arg, nicking, 
     log_filename = f"{current_time}_{inp_fname[:-4]}_batch_logfile.csv"
 
     # Ensure the log directory exists
-    log_dir = os.path.join(out_dir, '../log')
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    log_dir = os.path.join(script_dir, 'log')
     os.makedirs(log_dir, exist_ok=True)
     
     # Save the log file in the specified directory
-    log_df.to_csv(os.path.join(out_dir, '../log', log_filename), index=False)
+    log_df.to_csv(os.path.join(log_dir, log_filename), index=False)
 
 def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
                  editor='PE2-NGG', PBSlength_variants=PBSlengthrange, windowsize=windowsize_max,
@@ -899,7 +906,14 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
             closest_index = np.abs(ref_column - value).idxmin()
             return percentile_column.loc[closest_index] 
          
-        libdiversedf = pd.read_csv('dataset/20230913_Library_Diverse_Ranking_Percentile.csv')    
+        # Get the directory where the script is located
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Construct the full path to the CSV file
+        csv_path = os.path.join(script_dir, 'dataset', '20230913_Library_Diverse_Ranking_Percentile.csv')
+
+        # Load the CSV file using the constructed path
+        libdiversedf = pd.read_csv(csv_path)   
         for cell_type in cell_types:
             pegdataframe.sort_values(by=[f'PRIDICT2_0_editing_Score_deep_{cell_type}'], inplace=True, ascending=False)
             pegdataframe[f'{cell_type}_rank'] = range(1, len(pegdataframe) + 1)
@@ -1026,6 +1040,13 @@ def create_q_process(dfrow, models_list, queue, pindx, pred_dir, nicking, ngspri
     return mp.Process(target=pegRNAfinder, args=(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer))
 
 if __name__ == "__main__":
+    # Get the directory where the script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Set default output and log directories
+    default_predictions_dir = os.path.join(script_dir, 'predictions')
+
+
     parser = argparse.ArgumentParser(description="Running PRIDICT to design and predict pegRNAs.")
 
     subparser = parser.add_subparsers(dest='command')
@@ -1037,10 +1058,11 @@ if __name__ == "__main__":
     manual_m.add_argument("--use_5folds", action='store_true', help="Use all 5-folds trained models (and average output). Default is to use fold-1 model.")
     manual_m.add_argument("--nicking", action='store_true', help="Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction.")
     manual_m.add_argument("--ngsprimer", action='store_true', help="Additionally, design NGS primers for edit based on Primer3 design.")
+    manual_m.add_argument("--output-dir", type=str, default=default_predictions_dir, help="Output directory where results are dumped on disk")
 
-    batch_m.add_argument("--input-dir", type=str, default='./input', help="Input directory where the input csv file is found on disk")
     batch_m.add_argument("--input-fname", type=str, required=True, help="Input filename - name of csv file that has two columns {editseq, sequence_name}. See batch_template.csv in the ./input folder ")
-    batch_m.add_argument("--output-dir", type=str, default='./predictions', help="Output directory where results are dumped on disk")    
+    batch_m.add_argument("--input-dir", type=str, default='./input', help="Input directory where the input csv file is found on disk")
+    batch_m.add_argument("--output-dir", type=str, default=default_predictions_dir, help="Output directory where results are dumped on disk")    
     batch_m.add_argument("--use_5folds", action='store_true', help="Use all 5-folds trained models (and average output). Default is to use fold-1 model")
     batch_m.add_argument("--nicking", action='store_true', help="Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction.")
     batch_m.add_argument("--ngsprimer", action='store_true', help="Additionally, design NGS primers for edit based on Primer3 design.")
@@ -1053,7 +1075,7 @@ if __name__ == "__main__":
         print('Running in manual mode:')
         df = pd.DataFrame({'sequence_name': [args.sequence_name], 'editseq': [args.sequence]})
 
-        out_dir = os.path.join(os.path.dirname(__file__), './predictions')
+        out_dir = Path(args.output_dir).resolve()
         print('output directory:', out_dir)
 
         if args.use_5folds:
@@ -1079,18 +1101,10 @@ if __name__ == "__main__":
     elif args.command == 'batch':
         print('Running in batch mode:')
 
-        if args.input_dir != './input':
-            inp_dir = create_directory(args.input_dir, os.getcwd())
-        else:
-            inp_dir = os.path.join(os.path.dirname(__file__), args.input_dir)
-        print('input directory:', inp_dir)
-
+        inp_dir = Path(args.input_dir).resolve()
         inp_fname = args.input_fname
 
-        if args.output_dir != './predictions':
-            out_dir = create_directory(args.output_dir, os.getcwd())
-        else:
-            out_dir = os.path.join(os.path.dirname(__file__), args.output_dir)
+        out_dir = Path(args.output_dir).resolve()
         print('output directory:', out_dir)
 
         if args.use_5folds:

@@ -160,9 +160,11 @@ def runprediction(deepcas9seqlist, usecase):
     # Following lines were at start of script before
     np.set_printoptions(threshold=np.inf, linewidth=np.nan)
 
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    trained_models_path = os.path.join(script_dir, 'DeepCas9_Final/')
     ## Run Parameters ##
     TEST_NUM_SET = [0]  # List can be expanded in case of multiple test parameters
-    best_model_path_list = ['./trained_models/DeepCas9_Final/']
+    best_model_path_list = [trained_models_path]
 
     ##########
 
@@ -236,7 +238,7 @@ def runprediction(deepcas9seqlist, usecase):
                               './predictions/pridict/DeepCas9_Final/' + best_model)
             elif usecase == 'commandline':
                 saver.restore(sess,
-                              './trained_models/DeepCas9_Final/' + best_model)
+                              trained_models_path + best_model)
             TEST_Y = []
             for i in range(len(TEST_NUM_SET)):
                 predictionlist = Model_Finaltest(sess, TEST_X[i], filter_size, filter_num, if3d, model, args,
