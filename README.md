@@ -98,7 +98,9 @@ python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence "GCCTGGA
 ```shell
  python pridict2_pegRNA_design.py batch --input-fname batch_template.csv
 ``` 
-A log file will be saved in `./log` file folder (`date` +`time` + `batch_template_batch_logfile.csv`). Check the column `log` to catch any inputs which contained errors. If everything worked well, it should read `Prediction successful!` in each row.
+  #### Notes:
+- A log file will be saved in `log` file folder (`date` +`time` + `batch_template_batch_logfile.csv`). Check the column `log` to catch any inputs which contained errors. If everything worked well, it should read `Prediction successful!` in each row.
+- To run PRIDICT2.0 from outside the repository folder, add path to script file (e.g. `/mnt/c/Users/pridictuser/github/PRIDICT2/pridict2_pegRNA_design.py`) and use `--input-dir` to define input folder (e.g. `/mnt/c/Users/pridictuser/github/PRIDICT2/input`)
 
 --------------------------
 
@@ -115,9 +117,11 @@ To facilitate this process, we provide a Jupyter Notebook `notebook_silent_bysta
   --> to get all possible mutations for an intron/non-genic region, enter your input sequence in all ORF variants (3 for the fw strand; 3 for the rv strand) and run the batch mode.
 - PRIDICT2.0 conda environment
 
-#### Usage:
+#### Usage overview:
 1. Use the notebook or corresponding command line script to create an input batch file for `PRIDICT2.0` prediction with silent bystanders.
 2. Supports 1bp replacements and multi-bp replacements (not insertions/deletions).
 3. Input format: `PRIDICT2.0` format with 150bp flanking bases on both sides.
 4. Choose between manual (single mutation/edit) or batch (multiple inputs) functions.
-5. Run `PRIDICT2.0` in batch mode with the generated input sequences to obtain efficiency predictions.
+5. *Run `PRIDICT2.0` in batch mode in a terminal outside of notebook with the generated input sequences to obtain efficiency predictions.
+(Optional: run PRIDICT2.0 from within notebook, see commented out example)*
+6. Summarize individual bystander predictions to one prediction file (best prediction of each bystander variant)
