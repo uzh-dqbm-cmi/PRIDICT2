@@ -98,6 +98,8 @@ python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence "GCCTGGA
 ```shell
  python pridict2_pegRNA_design.py batch --input-fname batch_template.csv
 ``` 
+A log file will be saved in `./log` file folder (`date` +`time` + `batch_template_batch_logfile.csv`). Check the column `log` to catch any inputs which contained errors. If everything worked well, it should read `Prediction successful!` in each row.
+
 --------------------------
 
 ### Prediction of pegRNAs with silent bystander edits
