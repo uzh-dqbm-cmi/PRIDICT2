@@ -452,7 +452,7 @@ def primerdesign(seq):
     return primerdf_short, primerdf
 
 
-def parallel_batch_analysis(inp_dir, inp_fname, out_dir, out_fname, num_proc_arg, nicking, ngsprimer, run_ids=[0]):
+def parallel_batch_analysis(inp_dir, inp_fname, out_dir, num_proc_arg, nicking, ngsprimer, run_ids=[0]):
     """Perform pegRNA predictions in batch-mode."""
     batchsequencedf = pd.read_csv(os.path.join(inp_dir, inp_fname))
     log_entries = []
@@ -463,7 +463,7 @@ def parallel_batch_analysis(inp_dir, inp_fname, out_dir, out_fname, num_proc_arg
                 try:
                     # make sequence_name column to string even if there are only numbers
                     batchsequencedf['sequence_name'] = batchsequencedf['sequence_name'].astype(str)
-                    run_processing_parallel(batchsequencedf, out_dir, out_fname, num_proc_arg, nicking, ngsprimer, run_ids, log_entries)
+                    run_processing_parallel(batchsequencedf, out_dir, num_proc_arg, nicking, ngsprimer, run_ids, log_entries)
                 except Exception as e:
                     print(f"Exception: {e}")
                     print('***\n Error :( Check your input format is compatible with PRIDICT! More information in input box on https://pridict.it/ ...\n***\n')
@@ -948,7 +948,7 @@ def compute_average_predictions(df, grp_cols=['seq_id', 'dataset_name']):
 
 # editseq_test = 'GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGCTACCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC'
 
-def run_processing_parallel(df, pred_dir, fname, num_proc_arg, nicking, ngsprimer, run_ids, log_entries):
+def run_processing_parallel(df, pred_dir, num_proc_arg, nicking, ngsprimer, run_ids, log_entries):
 
     queue = mp.Queue()
     q_processes = []
@@ -1041,7 +1041,6 @@ if __name__ == "__main__":
     batch_m.add_argument("--input-dir", type=str, default='./input', help="Input directory where the input csv file is found on disk")
     batch_m.add_argument("--input-fname", type=str, required=True, help="Input filename - name of csv file that has two columns {editseq, sequence_name}. See batch_template.csv in the ./input folder ")
     batch_m.add_argument("--output-dir", type=str, default='./predictions', help="Output directory where results are dumped on disk")    
-    batch_m.add_argument("--output-fname", type=str, help="Output filename for the resulting dataframe. If not specified, the name of the input file will be used")
     batch_m.add_argument("--use_5folds", action='store_true', help="Use all 5-folds trained models (and average output). Default is to use fold-1 model")
     batch_m.add_argument("--nicking", action='store_true', help="Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction.")
     batch_m.add_argument("--ngsprimer", action='store_true', help="Additionally, design NGS primers for edit based on Primer3 design.")
@@ -1057,7 +1056,6 @@ if __name__ == "__main__":
         out_dir = os.path.join(os.path.dirname(__file__), './predictions')
         print('output directory:', out_dir)
 
-        fname = f'{args.sequence_name}'
         if args.use_5folds:
             run_ids = list(range(5))
         else:
@@ -1076,7 +1074,7 @@ if __name__ == "__main__":
             ngsprimer=False
         log_entries = []
 
-        run_processing_parallel(df, out_dir, fname, num_proc_arg, nicking, ngsprimer, run_ids, log_entries)
+        run_processing_parallel(df, out_dir, num_proc_arg, nicking, ngsprimer, run_ids, log_entries)
 
     elif args.command == 'batch':
         print('Running in batch mode:')
@@ -1099,11 +1097,6 @@ if __name__ == "__main__":
             run_ids = list(range(5))
         else:
             run_ids = [0]
-
-        if args.output_fname:
-            out_fname = args.output_fname
-        else:
-            out_fname = args.input_fname.split('.')[0]
         
         # max 3 cores to prevent memory issues
         if args.cores:
@@ -1123,6 +1116,6 @@ if __name__ == "__main__":
         else:
             ngsprimer=False
 
-        parallel_batch_analysis(inp_dir, inp_fname, out_dir, out_fname, num_proc_arg, nicking, ngsprimer, run_ids=run_ids)
+        parallel_batch_analysis(inp_dir, inp_fname, out_dir, num_proc_arg, nicking, ngsprimer, run_ids=run_ids)
     else:
         print('Please specify how to run PRIDICT2.0 ("manual" or "batch") as argument after the script name.')

@@ -52,7 +52,6 @@ The easiest way to install and manage Python packages on various OS platforms is
     # pytorch has to be installed separately here:
     pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cpu
   	
-	
     # run desired PRIDICT2.0 command (manual or batch mode, described below)
     python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence "GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGGCTACGGCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC"
     # results are stored in 'predictions' folder
@@ -92,13 +91,12 @@ python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence "GCCTGGA
   ####  Optional:
   -  `--input-dir` : directory where the input csv file is found on disk
   -  `--output-dir`: directory on disk where to dump results (default: `./predictions`)
-  -  `--output-fname`: output filename used for the saved results
   -  `--use_5folds`: Use all 5-folds trained models. Default is to use fold-1 model
   -  `--cores`: Number of cores to use for multiprocessing. Maximum 3 cores due to memory limitations. Default value 0 uses 3 cores if available.
   -  `--nicking`: Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction ([Kim et al. 2019](https://www.science.org/doi/10.1126/sciadv.aax9249)).
   -  `--ngsprimer`: Additionally, design NGS primers for edit based on [Primer3](https://primer3.org/) design.
 ```shell
- python pridict2_pegRNA_design.py batch --input-fname batch_template.csv --output-fname batchseqs
+ python pridict2_pegRNA_design.py batch --input-fname batch_template.csv
 ``` 
 --------------------------
 
