@@ -1039,6 +1039,18 @@ def join_q_process(q_process):
 def create_q_process(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer):
     return mp.Process(target=pegRNAfinder, args=(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer))
 
+def summarize_top_scoring(out_dir, summary_filename, cell_type, top_n):
+    # take all the csv files in the out_dir, sort them by the PRIDICT2.0 score and take the top_n. Then store in summary_df
+    sort_col = f'PRIDICT2_0_editing_Score_deep_{cell_type}'
+    summary_df = pd.DataFrame()
+    for file in os.listdir(out_dir):
+        if file.endswith('.csv'):
+            df = pd.read_csv(os.path.join(out_dir, file))
+            df = df.sort_values(by=[sort_col], ascending=False).head(top_n)
+            summary_df = pd.concat([summary_df, df], axis=0)
+    summary_df.to_csv(os.path.join(out_dir, summary_filename))
+
+
 if __name__ == "__main__":
     # Get the directory where the script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -1067,7 +1079,8 @@ if __name__ == "__main__":
     batch_m.add_argument("--nicking", action='store_true', help="Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction.")
     batch_m.add_argument("--ngsprimer", action='store_true', help="Additionally, design NGS primers for edit based on Primer3 design.")
     batch_m.add_argument("--cores", type=int, default=0, help="Number of cores to use for multiprocessing. Default value uses 3 available cores. Maximum 3 cores to prevent memory issues.")
-    
+    batch_m.add_argument("--summarize", type=str, help="Summarize the highest scoring pegRNA(s) of the batch run, based on PRIDICT2.0 score. Choose either 'HEK' or 'K562'.")
+    batch_m.add_argument("--summarize_number", type=int, default=3, help="Number of top scoring pegRNAs for each PRIDICT2.0 run, to be summarized in summary file. Default is 3.")
 
     args = parser.parse_args()
 
@@ -1130,6 +1143,33 @@ if __name__ == "__main__":
         else:
             ngsprimer=False
 
+        if args.summarize:
+            if not args.summarize in ['HEK', 'K562']:
+                raise ValueError("Please specify either 'HEK' or 'K562' as argument for the summarization option.")
+            else:
+                # check whether any .csv files are present in the output directory. If yes, raise an error since otherwise existing .csv files will also be included in the summarization
+                if len([f for f in os.listdir(out_dir) if f.endswith('.csv')]) > 0:
+                    raise ValueError("Output directory is not empty. Please move or delete existing .csv files before running PRIDICT2.0 with the summarization option.")
+          
         parallel_batch_analysis(inp_dir, inp_fname, out_dir, num_proc_arg, nicking, ngsprimer, run_ids=run_ids)
+
+        if args.summarize:  # only run summarization after batch processing
+            print(f'Summarizing the top {args.summarize_number} scoring pegRNAs of the batch run...')
+            # Get current date and time
+            current_time = time.strftime("%Y%m%d_%H%M")
+
+            if args.summarize == 'HEK':
+                # Create the log filename with date and time
+                summary_filename = f"{current_time}_summary_{args.summarize}_batch_logfile.csv"
+                summarize_top_scoring(out_dir, summary_filename, 'HEK', args.summarize_number)
+            elif args.summarize == 'K562':
+                # Create the log filename with date and time
+                summary_filename = f"{current_time}_summary_{args.summarize}_batch_logfile.csv"
+                summarize_top_scoring(out_dir, summary_filename, 'K562', args.summarize_number)
+            else:
+                print('Please specify either "HEK" or "K562" as argument for the summarization option.')
+                
+            print(f'Summarization completed! Summary file saved as {summary_filename} in the output directory.')
+        print('Batch processing completed!')
     else:
         print('Please specify how to run PRIDICT2.0 ("manual" or "batch") as argument after the script name.')
