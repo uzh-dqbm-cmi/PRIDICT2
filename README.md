@@ -80,6 +80,8 @@ The easiest way to install and manage Python packages on various OS platforms is
   -  `--cores`: Number of cores to use for multiprocessing. Maximum 3 cores due to memory limitations. Default value 0 uses 3 cores if available.
   -  `--nicking`: Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction ([Kim et al. 2019](https://www.science.org/doi/10.1126/sciadv.aax9249)).
   -  `--ngsprimer`: Additionally, design NGS primers for edit based on [Primer3](https://primer3.org/) design.
+
+Example command:
 ```shell
 python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence "GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGGCTACGGCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC"
 ``` 
@@ -93,8 +95,12 @@ python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence "GCCTGGA
   -  `--output-dir`: directory on disk where to dump results (default: `./predictions`)
   -  `--use_5folds`: Use all 5-folds trained models. Default is to use fold-1 model
   -  `--cores`: Number of cores to use for multiprocessing. Maximum 3 cores due to memory limitations. Default value 0 uses 3 cores if available.
-  -  `--nicking`: Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction ([Kim et al. 2019](https://www.science.org/doi/10.1126/sciadv.aax9249)).
-  -  `--ngsprimer`: Additionally, design NGS primers for edit based on [Primer3](https://primer3.org/) design.
+  -  `--nicking`: Design nicking guides for edit (PE3) with DeepSpCas9 prediction ([Kim et al. 2019](https://www.science.org/doi/10.1126/sciadv.aax9249)).
+  -  `--ngsprimer`: Design NGS primers for edit based on [Primer3](https://primer3.org/) design.
+  -  `--summarize`: Summarize the best scoring pegRNA(s) of each batch input in a summary file (saved in output folder in the format `date` +`time` + `HEK or K562` + `batch_summary.csv`). Choose either `HEK` or `K562` to get highest scoring pegRNAs based on desired PRIDICT2.0 score. (e.g., `--summarize K562`)
+  -  `--summarize_number`: Define the number of top scoring pegRNAs to be included in summary file. Default is `3`.
+
+Example command (including only required arguments):
 ```shell
  python pridict2_pegRNA_design.py batch --input-fname batch_template.csv
 ``` 
