@@ -1160,11 +1160,11 @@ if __name__ == "__main__":
 
             if args.summarize == 'HEK':
                 # Create the log filename with date and time
-                summary_filename = f"{current_time}_summary_{args.summarize}_batch_logfile.csv"
+                summary_filename = f"{current_time}_summary_{args.summarize}_batch_summary.csv"
                 summarize_top_scoring(out_dir, summary_filename, 'HEK', args.summarize_number)
             elif args.summarize == 'K562':
                 # Create the log filename with date and time
-                summary_filename = f"{current_time}_summary_{args.summarize}_batch_logfile.csv"
+                summary_filename = f"{current_time}_summary_{args.summarize}_batch_summary.csv"
                 summarize_top_scoring(out_dir, summary_filename, 'K562', args.summarize_number)
             else:
                 print('Please specify either "HEK" or "K562" as argument for the summarization option.')
