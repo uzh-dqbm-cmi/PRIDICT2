@@ -104,7 +104,7 @@ Example command (including only required arguments):
  python pridict2_pegRNA_design.py batch --input-fname batch_template.csv
 ``` 
   #### Notes:
-- A log file will be saved in `log` file folder (`date` +`time` + `batch_template_batch_logfile.csv`). Check the column `log` to catch any inputs which contained errors. If everything worked well, it should read `Prediction successful!` in each row.
+- A log file will be saved in `log` file folder (`date` +`time` + `batch filename (without file extension)` + `_batch_logfile.csv`). Check the column `log` to catch any inputs which contained errors. If everything worked well, it should read `Prediction successful!` in each row.
 - To run PRIDICT2.0 from outside the repository folder, add path to script file (e.g. `/mnt/c/Users/pridictuser/github/PRIDICT2/pridict2_pegRNA_design.py`) and use `--input-dir` to define input folder (e.g. `/mnt/c/Users/pridictuser/github/PRIDICT2/input`)
 
 --------------------------
