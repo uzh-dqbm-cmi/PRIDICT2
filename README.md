@@ -87,6 +87,7 @@ python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence "GCCTGGA
 --------------------------
 
 ### Running in batch mode:
+For instructions on running PRIDICT2.0 in batch mode on an HPC cluster with SLURM (e.g. with >1000 inputs), see our [HPC Batch Guide](./hpc_batch/README.md).
   ####  Required:
   -  `--input-fname`: input file name - name of csv file that has two columns [`editseq`, `sequence_name`]. See `batch_template.csv` in the `./input` folder
   ####  Optional:
