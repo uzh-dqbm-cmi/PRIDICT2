@@ -31,12 +31,12 @@ If find our work useful for your research please cite:
 
 ## Getting Started
 
-### Installation using Anaconda (Linux or Mac OS) 🐍
-Windows is currently NOT supported!
+### Installation using Anaconda (Linux, Mac OS or WSL) 🐍
+Windows is only supported via [Windows Subsystem for Linux (WSL)](https://learn.microsoft.com/en-us/windows/wsl/install).
 
 The easiest way to install and manage Python packages on various OS platforms is through [Anaconda](https://docs.anaconda.com/anaconda/install/). Once installed, any package (even if not available on Anaconda channel) could be installed using pip. 
 
-* Install [Anaconda](https://docs.anaconda.com/anaconda/install/).
+* Install [Anaconda](https://docs.anaconda.com/anaconda/install/) or [miniconda](https://docs.anaconda.com/miniconda/). (conda 22.11 or newer)
 * Start a terminal and run:
     ```shell
     # clone PRIDICT2.0 repository
