@@ -851,7 +851,7 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
                 'Nicking-Proto-Oligo-FW': nicking_oligo_FW,
                 'Nicking-Proto-Oligo-RV': nicking_oligo_RV})
 
-        pegdataframe = pd.DataFrame({'Original_Sequence': original_sequence_list, 'Edited-Sequences': edited_sequence_list,
+        pegdataframe = pd.DataFrame({'PRIDICT2_Format':sequence,'Original_Sequence': original_sequence_list, 'Edited_Sequence': edited_sequence_list,
                                     'Target-Strand': target_strandList, 'Mutation_Type': mutationtypelist,
                                     'Correction_Type': correctiontypelist, 'Correction_Length': correctionlengthlist,
                                     'Editing_Position': editpositionlist,
@@ -887,6 +887,7 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
         all_avg_preds = deeppridict(pegdataframe, models_list)
         # Extracting cell types from model
         cell_types = get_cell_types()
+
         # Inserting common columns outside the loop
         pegdataframe.insert(len(pegdataframe.columns), 'sequence_name', name)
 
@@ -925,7 +926,26 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
                     )
                 )
 
-       
+        ### Reorder the columns ###
+        # Get the list of all columns
+        all_columns = pegdataframe.columns.tolist()
+
+        # Identify the columns we want to move to the front
+        score_columns = [col for col in all_columns if col.startswith('PRIDICT2_0_editing_Score_deep_')]
+        percentile_columns = [col for col in all_columns if col.endswith('_percentile_to_librarydiverse')]
+        rank_columns = [col for col in all_columns if col.endswith('_rank')]
+
+        # Create the new column order
+        new_order = ['sequence_name'] + score_columns + percentile_columns + rank_columns
+
+        # Add any remaining columns that aren't in the new_order list
+        remaining_columns = [col for col in all_columns if col not in new_order]
+        new_order.extend(remaining_columns)
+
+        # Reorder the DataFrame
+        pegdataframe = pegdataframe[new_order]
+        ###
+
         # The time calculation and print statements
         pridict_time = time.time() - start_time
         print()
@@ -937,7 +957,7 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
             nickingdf.to_csv(os.path.join(pred_dir, name + '_nicking_guides.csv'))
         
 
-        pegdataframe.to_csv(os.path.join(pred_dir, name + '_pegRNA_Pridict_full.csv'))
+        pegdataframe.to_csv(os.path.join(pred_dir, name + '_pegRNA_Pridict_full.csv'), index=False)
         if ngsprimer:
             primerdf_short.to_csv(os.path.join(pred_dir, name + '_best_PCR_primers.csv'))
 
