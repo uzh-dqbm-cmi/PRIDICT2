@@ -38,32 +38,24 @@ fi
 
 # Variables
 HEADER=$(head -1 "$FULL_INPUT_PATH")
-TOTAL_LINES=$(wc -l < "$FULL_INPUT_PATH")
-DATA_LINES=$((TOTAL_LINES - 1))  # Exclude header
-LINES_PER_FILE=$((DATA_LINES / NUM_SPLITS))
-REMAINDER=$((DATA_LINES % NUM_SPLITS))
 
-# Function to create a split file
-create_split() {
-    local start=$1
-    local count=$2
-    local file_num=$3
-    local output_file="${FULL_INPUT_PATH%.*}_${file_num}.csv"
-    
-    echo "$HEADER" > "$output_file"
-    tail -n +$((start + 1)) "$FULL_INPUT_PATH" | head -n $count >> "$output_file"
-}
+# Calculate the number of lines per split file
+TOTAL_LINES=$(($(wc -l < "$FULL_INPUT_PATH") - 1)) # Exclude header
+LINES_PER_FILE=$((TOTAL_LINES / NUM_SPLITS))
 
-# Split the file
-start_line=2  # Start after header
-for ((i=0; i<NUM_SPLITS; i++)); do
-    count=$LINES_PER_FILE
-    if [ $i -lt $REMAINDER ]; then
-        count=$((count + 1))
-    fi
-    
-    create_split $start_line $count $(printf "%03d" $i)
-    start_line=$((start_line + count))
+# Adjust if LINES_PER_FILE is less than 1
+if [ "$LINES_PER_FILE" -lt 1 ]; then
+    LINES_PER_FILE=1
+fi
+
+# Split the file, preserving the header in each part
+tail -n +2 "$FULL_INPUT_PATH" | split -l $LINES_PER_FILE -d - "${FULL_INPUT_PATH%.*}_part"
+
+# Add the header to each split file and rename them
+COUNTER=0
+for FILE in ${FULL_INPUT_PATH%.*}_part*; do
+    NEW_NAME="${FULL_INPUT_PATH%.*}_${COUNTER}.csv"
+    mv "$FILE" "$NEW_NAME"
+    sed -i "1s/^/${HEADER}\n/" "$NEW_NAME"
+    COUNTER=$((COUNTER + 1))
 done
-
-echo "Split complete. Created $NUM_SPLITS files."
