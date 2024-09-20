@@ -498,8 +498,11 @@ def parallel_batch_analysis(inp_dir, inp_fname, out_dir, num_proc_arg, nicking, 
     # Get current date and time
     current_time = time.strftime("%Y%m%d_%H%M")
 
+    # only take filename without path (splitting with "/" and taking last element)
+    log_inp_fname = inp_fname.split("/")[-1]
+
     # Create the log filename with date and time
-    log_filename = f"{current_time}_{inp_fname[:-4]}_batch_logfile.csv"
+    log_filename = f"{current_time}_{log_inp_fname[:-4]}_batch_logfile.csv"
 
     # Ensure the log directory exists
     script_dir = os.path.dirname(os.path.abspath(__file__))
