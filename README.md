@@ -52,8 +52,8 @@ The easiest way to install and manage Python packages on various OS platforms is
     # pytorch has to be installed separately here:
     pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cpu
   	
-    # run desired PRIDICT2.0 command (manual or batch mode, described below)
-    python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence "GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGGCTACGGCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC"
+    # run desired PRIDICT2.0 command (single or batch mode, described below)
+    python pridict2_pegRNA_design.py single --sequence-name seq1 --sequence "GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGGCTACGGCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC"
     # results are stored in 'predictions' folder
     ```
 
@@ -63,14 +63,14 @@ The easiest way to install and manage Python packages on various OS platforms is
     # navigate into repository
     # activate the created environment
     conda activate pridict2
-    # run desired PRIDICT2.0 command (manual or batch mode, described below)
-    python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence "GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGGCTACGGCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC"
+    # run desired PRIDICT2.0 command (single or batch mode, described below)
+    python pridict2_pegRNA_design.py single --sequence-name seq1 --sequence "GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGGCTACGGCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC"
     # results are stored in 'predictions' folder
     ```
 
 --------------------------
 
-### Running PRIDICT2.0 in 'manual' mode:
+### Running PRIDICT2.0 in 'single' mode:
   ####  Required:
   -  `--sequence-name`: name of the sequene (i.e. unique id for the sequence)
   -  `--sequence`: target sequence to edit in quotes (format: `"xxxxxxxxx(a/g)xxxxxxxxxx"`; minimum of 100 bases up and downstream of brackets are needed; put unchanged edit-flanking bases *outside* of brackets (e.g. xxxT(a/g)Cxxx instead of xxx(TAC/TGC)xxx)
@@ -82,7 +82,7 @@ The easiest way to install and manage Python packages on various OS platforms is
 
 Example command:
 ```shell
-python pridict2_pegRNA_design.py manual --sequence-name seq1 --sequence "GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGGCTACGGCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC"
+python pridict2_pegRNA_design.py single --sequence-name seq1 --sequence "GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGGCTACGGCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC"
 ``` 
 --------------------------
 
@@ -127,7 +127,7 @@ To facilitate this process, we provide a Jupyter Notebook `notebook_silent_bysta
 1. Use the notebook or corresponding command line script to create an input batch file for `PRIDICT2.0` prediction with silent bystanders.
 2. Supports 1bp replacements and multi-bp replacements (not insertions/deletions).
 3. Input format: `PRIDICT2.0` format with 150bp flanking bases on both sides.
-4. Choose between manual (single mutation/edit) or batch (multiple inputs) functions.
+4. Choose between single (single mutation/edit) or batch (multiple inputs) functions.
 5. *Run `PRIDICT2.0` in batch mode in a terminal outside of notebook with the generated input sequences to obtain efficiency predictions.
 (Optional: run PRIDICT2.0 from within notebook, see commented out example)*
 6. Summarize individual bystander predictions to one prediction file (best prediction of each bystander variant)

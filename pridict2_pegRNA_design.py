@@ -1085,7 +1085,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Running PRIDICT to design and predict pegRNAs.")
 
     subparser = parser.add_subparsers(dest='command')
-    manual_m = subparser.add_parser('manual')
+    manual_m = subparser.add_parser('single')
     batch_m  = subparser.add_parser('batch')
 
     manual_m.add_argument("--sequence-name", type=str, help="Name of the sequence (i.e. unique id for the sequence)", required=True)
@@ -1107,8 +1107,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.command == 'manual':
-        print('Running in manual mode:')
+    if args.command == 'single':
+        print('Running in single mode:')
         df = pd.DataFrame({'sequence_name': [args.sequence_name], 'editseq': [args.sequence]})
 
         out_dir = Path(args.output_dir).resolve()
@@ -1195,4 +1195,4 @@ if __name__ == "__main__":
             print(f'Summarization completed! Summary file saved as {summary_filename} in the output directory.')
         print('Batch processing completed!')
     else:
-        print('Please specify how to run PRIDICT2.0 ("manual" or "batch") as argument after the script name.')
+        print('Please specify how to run PRIDICT2.0 ("single" or "batch") as argument after the script name.')
