@@ -74,7 +74,7 @@ The easiest way to install and manage Python packages on various OS platforms is
     # activate the created environment
     conda activate pridict2
 
-    # pytorch has to be installed separately here:
+    # after activating environment, pytorch has to be installed separately here:
     pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cpu
   	
     # run desired PRIDICT2.0 command (single or batch mode, described below)
@@ -103,7 +103,7 @@ The easiest way to install and manage Python packages on various OS platforms is
   -  `--output-dir`: output directory where results are dumped on disk (default: `./predictions`; directory must already exist before running)
   -  `--use_5folds`: Use all 5-folds trained models. Default is to use fold-1 model
   -  `--nicking`: Additionally, design nicking guides for edit (PE3) with DeepSpCas9 prediction ([Kim et al. 2019](https://www.science.org/doi/10.1126/sciadv.aax9249)).
-  -  `--ngsprimer`: Additionally, design NGS primers for edit based on [Primer3](https://primer3.org/) design.
+  -  `--ngsprimer`: Additionally, design high-throughput sequencing (NGS) primers for edit based on [Primer3](https://primer3.org/) design.
 
 Example command:
 ```shell
@@ -121,7 +121,7 @@ For instructions on running PRIDICT2.0 in batch mode on an HPC cluster with SLUR
   -  `--use_5folds`: Use all 5-folds trained models. Default is to use fold-1 model
   -  `--cores`: Number of batch input sequences that can be predicted simultaneously. Maximum 3 cores due to memory limitations. Default value 0 uses 3 cores if available.
   -  `--nicking`: Design nicking guides for edit (PE3) with DeepSpCas9 prediction ([Kim et al. 2019](https://www.science.org/doi/10.1126/sciadv.aax9249)).
-  -  `--ngsprimer`: Design NGS primers for edit based on [Primer3](https://primer3.org/) design.
+  -  `--ngsprimer`: Additionally, design high-throughput sequencing (NGS) primers for edit based on [Primer3](https://primer3.org/) design.
   -  `--summarize`: Summarize the best scoring pegRNA(s) of each batch input in a summary file (saved in output folder in the format `date` +`time` + `HEK or K562` + `batch_summary.csv`). Choose either `HEK` or `K562` to get highest scoring pegRNAs based on desired PRIDICT2.0 score. (e.g., `--summarize K562`)
   -  `--summarize_number`: Define the number of top scoring pegRNAs to be included in summary file. Default is `3`.
 
