@@ -8,7 +8,7 @@
 
 ## Complementary Model
 
-- **ePRIDICT**: This model focuses on the influence of local chromatin context (K562) on prime editing efficiencies and is designed to complement PRIDICT2.0. [Access GitHub Repository](https://github.com/Schwank-Lab/epridict)
+- **ePRIDICT**: This model focuses on the influence of local chromatin context (K562; ATCC CCL-243) on prime editing efficiencies and is designed to complement PRIDICT2.0. [Access GitHub Repository](https://github.com/Schwank-Lab/epridict)
 
 ## Resources
 
@@ -24,8 +24,33 @@ For questions or suggestions, please either:
 ## Citation
 
 If find our work useful for your research please cite:
-- [Mathis et al., Nature Biotechnology, 2024](https://rdcu.be/dLu0f) (PRIDICT2.0)
-- [Mathis & Allam et al., Nature Biotechnology, 2023](https://rdcu.be/c3IM5) (PRIDICT)
+- [Mathis et al., Nature Biotechnology, 2024](https://rdcu.be/dLu0f) (PRIDICT2.0):
+```bibtex
+@article{mathis2024machine,
+  title={Machine learning prediction of prime editing efficiency across diverse chromatin contexts},
+  author={Mathis, Nicolas and Allam, Ahmed and Tálas, András, and Kissling, Lucas and Benvenuto, Elena and Schmidheini, Lukas and Schep, Ruben and Damodharan, Tanav and Balázs, Zsolt and Janjuha, Sharan and others},
+  journal={Nature Biotechnology},
+  pages={1--8},
+  year={2024},
+  publisher={Nature Publishing Group US New York}
+}
+```
+- [Mathis & Allam et al., Nature Biotechnology, 2023](https://rdcu.be/c3IM5) (PRIDICT):
+```bibtex
+@article{mathis2023predicting,
+  title={Predicting prime editing efficiency and product purity by deep learning},
+  author={Mathis, Nicolas and Allam, Ahmed and Kissling, Lucas and Marquart, Kim Fabiano and Schmidheini, Lukas and Solari, Cristina and Balázs, Zsolt and Krauthammer, Michael and Schwank, Gerald},
+  journal={Nature biotechnology},
+  volume={41},
+  number={8},
+  pages={1151--1159},
+  year={2023},
+  publisher={Nature Publishing Group US New York}
+}
+```
+
+
+
 
 
 
