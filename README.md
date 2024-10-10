@@ -30,9 +30,9 @@ If find our work useful for your research please cite:
   title={Machine learning prediction of prime editing efficiency across diverse chromatin contexts},
   author={Mathis, Nicolas and Allam, Ahmed and Tálas, András, and Kissling, Lucas and Benvenuto, Elena and Schmidheini, Lukas and Schep, Ruben and Damodharan, Tanav and Balázs, Zsolt and Janjuha, Sharan and others},
   journal={Nature Biotechnology},
-  pages={1--8},
   year={2024},
-  publisher={Nature Publishing Group US New York}
+  publisher={Nature Publishing Group},
+  doi={10.1038/s41587-024-02268-2}
 }
 ```
 - [Mathis & Allam et al., Nature Biotechnology, 2023](https://rdcu.be/c3IM5) (PRIDICT):
@@ -40,12 +40,13 @@ If find our work useful for your research please cite:
 @article{mathis2023predicting,
   title={Predicting prime editing efficiency and product purity by deep learning},
   author={Mathis, Nicolas and Allam, Ahmed and Kissling, Lucas and Marquart, Kim Fabiano and Schmidheini, Lukas and Solari, Cristina and Balázs, Zsolt and Krauthammer, Michael and Schwank, Gerald},
-  journal={Nature biotechnology},
+  journal={Nature Biotechnology},
   volume={41},
   number={8},
   pages={1151--1159},
   year={2023},
-  publisher={Nature Publishing Group US New York}
+  publisher={Nature Publishing Group},
+  doi={10.1038/s41587-022-01613-7}
 }
 ```
 
