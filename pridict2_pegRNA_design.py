@@ -479,7 +479,7 @@ def parallel_batch_analysis(inp_dir, inp_fname, out_dir, num_proc_arg, nicking, 
                 print('Please check your input-file! (Column "sequence_name" is not unique.)')
                 # Log error for unique names
                 for _, row in batchsequencedf.iterrows():
-                    log_entries.append({'sequence_name': row['sequence_name'], 'editseq': row['editseq'], 'log': 'Column sequence_name not unique.'})
+                    log_entries.append({'sequence_name': row['sequence_name'], 'editseq': row['editseq'], 'log': 'At least one sequence_name in input batch file is not unique. Prediction aborted.'})
         else:
             print('Please check your input-file! (Missing "sequence_name" column.)')
             # Log error for missing sequence_name column
