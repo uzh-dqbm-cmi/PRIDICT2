@@ -76,7 +76,7 @@ The easiest way to install and manage Python packages on various OS platforms is
     conda activate pridict2
 
     # after activating environment, pytorch has to be installed separately here:
-    pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cpu
+    pip install torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu
   	
     # run desired PRIDICT2.0 command (single or batch mode, described below)
     python pridict2_pegRNA_design.py single --sequence-name seq1 --sequence "GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGGCTACGGCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC"
