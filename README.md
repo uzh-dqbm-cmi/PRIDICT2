@@ -9,6 +9,7 @@
 ## Complementary Model
 
 - **ePRIDICT**: This model focuses on the influence of local chromatin context (K562) on prime editing efficiencies and is designed to complement PRIDICT2.0. [Access GitHub Repository](https://github.com/Schwank-Lab/epridict)
+- **DeepPrime**: This is a complementary model from [Yu et al. 2023](https://www.cell.com/cell/pdf/S0092-8674(23)00331-8.pdf) providing pegRNA design efficiency predictions for edit types <= 3 bp. [Access GitHub Repository](https://github.com/hkimlab/DeepPrime) 
 
 ## Resources
 
