@@ -552,6 +552,8 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
         protospacer_oligo_RV = []  # contains the protospacer oligo to be ordered for pegRNA cloning (RV)
         extension_oligo_FW = []  # contains the extension oligo to be ordered for pegRNA cloning (FW)
         extension_oligo_RV = []  # contains the extension oligo to be ordered for pegRNA cloning (RV)
+        pcrGG_oligo1 = []
+        pcrGG_oligo2 = []
         editpositionlist = []
         PBSlength_variants_dic = {}
         PBSrevcomp_dic = {}
@@ -572,6 +574,7 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
         rtlengthoverhanglist = []
         rtlengthlist = []
         pegRNA_list = []
+        scaffold_list = []
         nickingprotospacerlist = []
         nickingdeepcas9list = []
         nickingpositiontoeditlist = []
@@ -784,6 +787,7 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
                                 extension_oligo_FW.append(
                                     primescaffoldseq[-4:] + RTseqrevcomp[RTlengthoverhang] + PBSrevcomp[PBSlength])
                                 extension_oligo_RV.append('AAAA' + str(PBS[PBSlength]) + str(RTseq[RTlengthoverhang]))
+                                pcrGG_oligo2.append('ATggtctcGCGCG'.lower() + str(PBS[PBSlength]) + str(RTseq[RTlengthoverhang]) + 'GCACCGACTCGGTGCCAC'.lower())
                                 RTseqrevcomplist.append(RTseqrevcomp[RTlengthoverhang])
                                 RTseqlist.append(RTseq[RTlengthoverhang])
                                 RTseqoverhangrevcomplist.append(RTseqoverhangrevcomp[RTlengthoverhang])
@@ -794,6 +798,7 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
                                 rtlengthlist.append(RTseqlength[RTlengthoverhang])
                                 target_strandList.append(target_strand)
                                 protospacerpamsequence.append(protospacerseq)
+                                pcrGG_oligo1.append('ATggtctcgCACC'.lower() + protospacerseq + 'GTTTCAGAGCTATGCTGGAAACAGC'.lower())
                                 protospacer_oligo_FW.append('CACC' + protospacerseq + primescaffoldseq[:5])
                                 protospacer_oligo_RV.append(
                                     str(Seq(primescaffoldseq[:9]).reverse_complement()) + str(protospacerrev))
@@ -829,6 +834,7 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
                                 edited_base_mtlist.append(edited_base_mt)
                                 original_base_mt_nan_list.append(original_base_mt_nan)
                                 edited_base_mt_nan_list.append(edited_base_mt_nan)
+                                scaffold_list.append(primescaffoldseq)
 
                                 rtoverhangmatch = RToverhangmatches(RTseqoverhang[RTlengthoverhang], edited_seq,
                                                                     RToverhangstartposition, RTlengthoverhang)
@@ -866,7 +872,8 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
                                     'Spacer-Oligo-FW': protospacer_oligo_FW,
                                     'Spacer-Oligo-RV': protospacer_oligo_RV,
                                     'Extension-Oligo-FW': extension_oligo_FW, 'Extension-Oligo-RV': extension_oligo_RV,
-                                    'pegRNA': pegRNA_list,
+                                    'PCR-GG-Oligo1_Spacer': pcrGG_oligo1, 'PCR-GG-Oligo2_Extension': pcrGG_oligo2,
+                                    'Scaffold_Optimized': scaffold_list, 'pegRNA': pegRNA_list,
                                     'Editor_Variant': variantList,
                                     'protospacermt': protospacermtlist,
                                     'extensionmt': extensionmtlist, 'RTmt': RTmtlist, 'RToverhangmt': RToverhangmtlist,
