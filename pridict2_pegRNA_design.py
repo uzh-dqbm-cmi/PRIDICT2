@@ -941,9 +941,9 @@ def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
         all_columns = pegdataframe.columns.tolist()
 
         # Identify the columns we want to move to the front
-        score_columns = [col for col in all_columns if col.startswith('PRIDICT2_0_editing_Score_deep_')]
-        percentile_columns = [col for col in all_columns if col.endswith('_percentile_to_librarydiverse')]
-        rank_columns = [col for col in all_columns if col.endswith('_rank')]
+        score_columns = ['PRIDICT2_0_editing_Score_deep_K562', 'PRIDICT2_0_editing_Score_deep_HEK']
+        percentile_columns = ['K562_percentile_to_librarydiverse', 'HEK_percentile_to_librarydiverse']
+        rank_columns = ['K562_rank', 'HEK_rank']
 
         # Create the new column order
         new_order = ['sequence_name'] + score_columns + percentile_columns + rank_columns
