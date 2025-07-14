@@ -43,6 +43,7 @@ from Bio.SeqUtils import MeltingTemp as mt
 import pandas as pd
 import os
 import time
+import torch
 import torch.multiprocessing as mp
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 mp.set_start_method("spawn", force=True)
@@ -59,6 +60,7 @@ from pridict.pridictv2.utilities import *
 from pridict.pridictv2.dataset import *
 from pridict.pridictv2.predict_outcomedistrib import *
 
+ModelsList = dict[str, list[tuple[PridictBaseModels, str]]]
 
 def primesequenceparsing(sequence: str) -> object:
     """
@@ -291,7 +293,7 @@ def get_prieml_model_template():
     prieml_model = PRIEML_Model(device, wsize=wsize, normalize=normalize_opt, fdtype=torch.float32)
     return prieml_model
 
-def load_pridict_model(run_ids=[0]):
+def load_pridict_model(run_ids: list[int] = [0]) -> ModelsList:
     """construct and return PRIDICT model along with model files directory """
     models_lst_dict = {}  # Initialize a dictionary to hold lists of models keyed by model_id
     repo_dir = os.path.dirname(os.path.abspath(__file__))
@@ -304,7 +306,7 @@ def load_pridict_model(run_ids=[0]):
     prieml_model = get_prieml_model_template()
 
     for model_desc_tup in modellist:
-        models_lst = []  # Initialize models_lst for each model
+        models_lst: list[tuple[PridictBaseModels, str]] = []  # Initialize models_lst for each model
         model_id, __, mfolder = model_desc_tup
 
         for run_num in run_ids: # add the different model runs (i.e. based on 5 folds)
@@ -316,7 +318,7 @@ def load_pridict_model(run_ids=[0]):
 
     return models_lst_dict
 
-def deeppridict(pegdataframe, models_lst_dict):
+def deeppridict(pegdataframe, models_lst_dict: ModelsList):
     """Perform score prediction on dataframe of features based on RNN model.
     
     Args:
@@ -516,7 +518,7 @@ def parallel_batch_analysis(inp_dir, inp_fname, out_dir, num_proc_arg, nicking, 
     # Save the log file in the specified directory
     log_df.to_csv(os.path.join(log_dir, log_filename), index=False)
 
-def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
+def pegRNAfinder(dfrow, models_list: ModelsList, queue, pindx, pred_dir, nicking, ngsprimer,
                  editor='PE2-NGG', PBSlength_variants=PBSlengthrange, windowsize=windowsize_max,
                  RTseqoverhang_variants=RToverhanglengthrange):
     """Find pegRNAs and prediction scores for a set desired edit."""
@@ -1070,7 +1072,7 @@ def join_q_process(q_process):
     q_process.join()
     print("<<< joined row computation process")
     
-def create_q_process(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer):
+def create_q_process(dfrow, models_list: ModelsList, queue, pindx, pred_dir, nicking, ngsprimer):
     return mp.Process(target=pegRNAfinder, args=(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer))
 
 def summarize_top_scoring(out_dir, summary_filename, cell_type, top_n):

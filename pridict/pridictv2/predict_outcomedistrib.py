@@ -1,4 +1,5 @@
 import os
+from typing import Union
 import numpy as np
 import pandas as pd
 import torch
@@ -18,6 +19,17 @@ from .model import AnnotEmbeder_InitSeq, AnnotEmbeder_MutSeq, FeatureEmbAttentio
 from .hyperparam import RNNHyperparamConfig
 from .dataset import ConcatDataLoaders
 from .data_preprocess import Viz_PESeqs, check_editing_alignment_correctness
+
+PridictBaseModel = (
+    AnnotEmbeder_InitSeq 
+    | AnnotEmbeder_MutSeq 
+    | RNN_Net 
+    | FeatureEmbAttention
+    | MLPEmbedder
+    | MLPDecoderDistribution
+    | MLPDecoder 
+)
+PridictBaseModels = list[tuple[PridictBaseModel, str]]
 
 class PRIEML_Model:
     def __init__(self, device, wsize=20, normalize='none', include_MFE=False, include_addendumfeat=False,  normalizer_dict=None, fdtype=torch.float32):
@@ -138,7 +150,7 @@ class PRIEML_Model:
         mconfig, options = get_saved_config(mconfig_dir)
         return mconfig, options
 
-    def _build_base_model(self, config, cell_types=[]):
+    def _build_base_model(self, config, cell_types=[]) -> PridictBaseModels:
         print('--- building model ---')
         device = self.device
         mconfig, options = config
@@ -214,7 +226,7 @@ class PRIEML_Model:
         #                                    pdropout=model_config.p_dropout, 
         #                                    num_encoder_units=1)
         
-        seqlevel_embedder_lst = []
+        seqlevel_embedder_lst: list[tuple[MLPEmbedder, str]] = []
         mlp_embed_factor = 1
         if separate_seqlevel_embedder:
             for dname in datasets_name_lst:
@@ -235,10 +247,10 @@ class PRIEML_Model:
             seqlevel_embedder_lst.append((seqlevel_featembeder, f'seqlevel_featembeder'))
 
         if separate_attention_layers:
-            attn_modules_lst = []
+            attn_modules_lst: list[list[tuple[FeatureEmbAttention, str]]] = []
             seq_types = ['init', 'mut']
             for dname in datasets_name_lst:
-                tmp_lst = []
+                tmp_lst: list[tuple[FeatureEmbAttention, str]] = []
                 for seq_type in seq_types: # original and mutated
                     for attn_type in ['local', 'global']:
                         tmp_lst.append((FeatureEmbAttention(z_dim), f'{attn_type}_featemb_{seq_type}_attn_{dname}'))
@@ -246,9 +258,9 @@ class PRIEML_Model:
             # print('using separate attention layers!!')
             # print(attn_modules_lst)
         else:
-            attn_modules_lst = []
+            attn_modules_lst: list[list[tuple[FeatureEmbAttention, str]]] = []
             seq_types = ['init', 'mut']
-            tmp_lst = []
+            tmp_lst: list[tuple[FeatureEmbAttention, str]] = []
             for seq_type in seq_types: # original and mutated
                 for attn_type in ['local', 'global']:
                     tmp_lst.append((FeatureEmbAttention(z_dim), f'{attn_type}_featemb_{seq_type}_attn'))
@@ -257,7 +269,7 @@ class PRIEML_Model:
         # print('loss_func:', loss_func)
         if loss_func in {'KLDloss', 'CEloss'}:
             # print('using MLPDecoderDistribution')
-            decoder_lst = []
+            decoder_lst: list[tuple[MLPDecoderDistribution | MLPDecoder, str]] = []
             for dname in datasets_name_lst:
                 decoder  = MLPDecoderDistribution(5*z_dim,
                                                 embed_dim=z_dim,
@@ -269,7 +281,7 @@ class PRIEML_Model:
                 decoder_lst.append((decoder,f'decoder_{dname}'))
         else:
             # print('using MLPDecoder')
-            decoder_lst = []
+            decoder_lst: list[tuple[MLPDecoderDistribution | MLPDecoder, str]] = []
             for dname in datasets_name_lst:
                 decoder  = MLPDecoder(5*z_dim,
                                     embed_dim=z_dim,
@@ -283,7 +295,7 @@ class PRIEML_Model:
 
 
         # group submodels
-        models = [(init_annot_embed, 'init_annot_embed'), 
+        models: PridictBaseModels = [(init_annot_embed, 'init_annot_embed'), 
                   (mut_annot_embed, 'mut_annot_embed'),
                   (init_encoder, 'init_encoder'),
                   (mut_encoder, 'mut_encoder')]
@@ -297,7 +309,7 @@ class PRIEML_Model:
         # 4 + num_dsets*4 + num_dsest + num_dset
         return models
 
-    def _load_model_statedict_(self, models, model_dir):
+    def _load_model_statedict_(self, models: PridictBaseModels, model_dir: str):
         print('--- loading trained model ---')
         device = self.device
         fdtype = self.fdtype
@@ -311,7 +323,7 @@ class PRIEML_Model:
             m.eval()
         return models
 
-    def _run_prediction(self, models, dloader, y_ref=[]):
+    def _run_prediction(self, models: PridictBaseModels, dloader, y_ref=[]):
 
         device = self.device
         fdtype = self.fdtype
@@ -524,7 +536,7 @@ class PRIEML_Model:
         return dloader
 
 
-    def build_retrieve_models(self, model_dir):
+    def build_retrieve_models(self, model_dir: str) -> PridictBaseModels:
 
         mconfig_dir = os.path.join(model_dir, 'config')
         mconfig = self._load_model_config(mconfig_dir)
@@ -554,7 +566,7 @@ class PRIEML_Model:
 
         return pred_df
 
-    def predict_from_dloader_using_loaded_models(self, dloader, models, y_ref=[]):
+    def predict_from_dloader_using_loaded_models(self, dloader, models: PridictBaseModels, y_ref=[]):
         pred_df = self._run_prediction(models, dloader, y_ref=y_ref)
         return pred_df
 
