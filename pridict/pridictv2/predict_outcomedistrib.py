@@ -120,7 +120,7 @@ class PRIEML_Model:
         # print(check_editing_alignment_correctness(tdf, correction_len_colname='Correction_Length_effective'))
         return norm_colnames, df, proc_seq_init_df,num_init_cols, proc_seq_mut_df, num_mut_cols
 
-    def _construct_datatensor(self, norm_colnames, df, proc_seq_init_df,num_init_cols, proc_seq_mut_df, num_mut_cols, y_ref=[]):
+    def _construct_datatensor(self, norm_colnames, df: pd.DataFrame, proc_seq_init_df,num_init_cols, proc_seq_mut_df, num_mut_cols, y_ref=[]):
         print('--- creating datatensor ---')
         wsize=self.wsize # to read this from options dumped on disk
         dtensor = create_datatensor(df, 
@@ -132,7 +132,7 @@ class PRIEML_Model:
   
         return dtensor
 
-    def _construct_dloader(self, dtensor, cell_types, batch_size):
+    def _construct_dloader(self, dtensor, cell_types, batch_size: int | None) -> ConcatDataLoaders:
         print('--- creating datatloader ---')
         dloader_lst = []
         for __ in cell_types:
@@ -323,7 +323,7 @@ class PRIEML_Model:
             m.eval()
         return models
 
-    def _run_prediction(self, models: PridictBaseModels, dloader, y_ref=[]):
+    def _run_prediction(self, models: PridictBaseModels, dloader: ConcatDataLoaders, y_ref=[]):
 
         device = self.device
         fdtype = self.fdtype
@@ -507,7 +507,7 @@ class PRIEML_Model:
                                               dset_names=dataset_ids_lst)
         return predictions_df
 
-    def prepare_data(self, df, model_name, cell_types=[], y_ref=[], batch_size=500):
+    def prepare_data(self, df: pd.DataFrame, model_name, cell_types=[], y_ref=[], batch_size: int | None = 500) -> ConcatDataLoaders:
         """
         Args:
             df: pandas dataframe
@@ -551,7 +551,7 @@ class PRIEML_Model:
         return models
 
 
-    def predict_from_dloader(self, dloader, model_dir, y_ref=[]):
+    def predict_from_dloader(self, dloader: ConcatDataLoaders, model_dir, y_ref=[]):
         
         cell_types = dloader.datasetnames
         mconfig_dir = os.path.join(model_dir, 'config')
@@ -566,7 +566,7 @@ class PRIEML_Model:
 
         return pred_df
 
-    def predict_from_dloader_using_loaded_models(self, dloader, models: PridictBaseModels, y_ref=[]):
+    def predict_from_dloader_using_loaded_models(self, dloader: ConcatDataLoaders, models: PridictBaseModels, y_ref=[]):
         pred_df = self._run_prediction(models, dloader, y_ref=y_ref)
         return pred_df
 

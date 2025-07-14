@@ -1,5 +1,6 @@
 import os
 from itertools import cycle
+from typing import Literal
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import GroupShuffleSplit, GroupKFold
@@ -46,7 +47,7 @@ class PEDataTensor(Dataset):
         self.indx_seqid_map = indx_seqid_map
         self.num_samples = self.X_init_nucl.size(0)  # int, number of sequences
 
-    def __getitem__(self, indx):
+    def __getitem__(self, indx: int):
         if self.y_score is None:
             y_val = -1.
         else:
@@ -84,14 +85,14 @@ class PEDataTensor(Dataset):
 
 class PartitionDataTensor(Dataset):
 
-    def __init__(self, pe_datatensor, partition_ids, dsettype, run_num):
+    def __init__(self, pe_datatensor: PEDataTensor, partition_ids: list[int], dsettype: str, run_num: int):
         self.pe_datatensor = pe_datatensor  # instance of :class:`PEDatatensor`
         self.partition_ids = partition_ids  # list of sequence indices
         self.dsettype = dsettype  # string, dataset type (i.e. train, validation, test)
         self.run_num = run_num  # int, run number
         self.num_samples = len(self.partition_ids[:])  # int, number of sequences in the partition
 
-    def __getitem__(self, indx):
+    def __getitem__(self, indx: int):
         target_id = self.partition_ids[indx]
         return self.pe_datatensor[target_id]
 
@@ -219,7 +220,7 @@ def get_seqlevel_featnames(suffix='_norm'):
                    norm_colnames[1:] + ['original_base_mt_nan', 'edited_base_mt_nan']
     return seqfeat_cols
 
-def create_datatensor(data_df, proc_seq_init_df, num_init_cols,  proc_seq_mut_df, num_mut_cols, cont_cols, window=10, y_ref=[]):
+def create_datatensor(data_df: pd.DataFrame, proc_seq_init_df, num_init_cols,  proc_seq_mut_df, num_mut_cols, cont_cols, window=10, y_ref=[]) -> PEDataTensor:
     """create a instance of DataTensor from processeed/cleaned dataframe
     
     Args:
@@ -503,7 +504,7 @@ def report_label_distrib(labels):
     for i, label in enumerate(classes):
         print("class:", label, "norm count:", norm_counts[i])
 
-def generate_partition_datatensor(pe_datatensor, data_partitions):
+def generate_partition_datatensor(pe_datatensor: PEDataTensor, data_partitions: dict[int, dict[str, list[int]]]) -> dict[int, dict[str, PartitionDataTensor]]:
     datatensor_partitions = {}
     for run_num in data_partitions:
         datatensor_partitions[run_num] = {}
@@ -567,7 +568,7 @@ class ConcatDataLoaders():
     
     """
 
-    def __init__(self, dataloaders, dataset_names, mode='cycle'):
+    def __init__(self, dataloaders, dataset_names, mode: Literal['cycle', 'common_size'] = 'cycle'):
         self.dataloaders = dataloaders
         self.datasetnames = dataset_names
         self.mode = mode
@@ -612,7 +613,7 @@ class ConcatDataLoaders():
             return min_val
 
     
-def construct_load_multiple_dataloaders(dataset_fold_lst, dsettypes, config, wrk_dir):
+def construct_load_multiple_dataloaders(dataset_fold_lst: list[dict[str, PartitionDataTensor]], dsettypes, config, wrk_dir):
     """construct dataloaders for the dataset for one fold
 
        Args:

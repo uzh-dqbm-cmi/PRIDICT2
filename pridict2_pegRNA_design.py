@@ -318,7 +318,7 @@ def load_pridict_model(run_ids: list[int] = [0]) -> ModelsList:
 
     return models_lst_dict
 
-def deeppridict(pegdataframe, models_lst_dict: ModelsList):
+def deeppridict(pegdataframe: pd.DataFrame, models_lst_dict: ModelsList):
     """Perform score prediction on dataframe of features based on RNN model.
     
     Args:
