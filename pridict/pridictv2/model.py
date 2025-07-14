@@ -5,7 +5,7 @@ class MaskGenerator():
     def __init__(self):
         pass
     @classmethod
-    def create_content_mask(clss, x_mask_shape, x_len):
+    def create_content_mask(cls, x_mask_shape, x_len):
         """
         Args:
             x_mask_shape: tuple, (bsize, max_seqlen)
