@@ -1,6 +1,6 @@
 import os
 from itertools import cycle
-from typing import Literal
+from typing import Any, Literal
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import GroupShuffleSplit, GroupKFold
@@ -12,19 +12,19 @@ from .utilities import ContModelScore
 class PEDataTensor(Dataset):
 
     def __init__(self, 
-                 X_init_nucl, 
-                 X_init_proto, 
-                 X_init_pbs,
-                 X_init_rt,
-                 X_mut_nucl,
-                 X_mut_pbs,
-                 X_mut_rt,
-                 seqlevel_feat,
-                 seqlevel_feat_colnames,
-                 y_score, 
-                 x_init_len,
-                 x_mut_len,
-                 indx_seqid_map):
+                 X_init_nucl: torch.Tensor, 
+                 X_init_proto: torch.Tensor, 
+                 X_init_pbs: torch.Tensor,
+                 X_init_rt: torch.Tensor,
+                 X_mut_nucl: torch.Tensor,
+                 X_mut_pbs: torch.Tensor,
+                 X_mut_rt: torch.Tensor,
+                 seqlevel_feat: torch.Tensor,
+                 seqlevel_feat_colnames: list[str],
+                 y_score: torch.Tensor | None, 
+                 x_init_len: Any,
+                 x_mut_len: Any,
+                 indx_seqid_map: dict[int, Any]):
         # B: batch elements; T: sequence length
         # tensor.float32, (B, T), (sequence characters are mapped to 0-3) and 4 for padded characters
         self.X_init_nucl = X_init_nucl
@@ -152,14 +152,14 @@ class MinMaxNormalizer:
             
         self.colnames = self.get_colnames()
   
-    def get_colnames(self):
+    def get_colnames(self) -> list[str]:
         colnames = []
         for tup in self.normalizer_info_max:
             featnames, __ = tup
             colnames += featnames
         return colnames
 
-    def normalize_cont_cols(self, df, normalize_opt = 'max', suffix=''):
+    def normalize_cont_cols(self, df, normalize_opt: Literal['max', 'minmax', 'standardize'] = 'max', suffix: str = '') -> list[str]:
         if normalize_opt == 'max':
             print('--- max normalization ---')
             return self.normalize_cont_cols_max(df, suffix=suffix)
@@ -172,7 +172,7 @@ class MinMaxNormalizer:
         else:
             raise ValueError(f'Invalid normalization option: {normalize_opt}')
         
-    def normalize_cont_cols_meanstd(self, df, suffix=''):
+    def normalize_cont_cols_meanstd(self, df, suffix: str = '') -> list[str]:
         """inplace min-max normalization of columns"""
         normalizer_info = self.normalizer_info_minmax
         cont_colnames = []
@@ -184,7 +184,7 @@ class MinMaxNormalizer:
                 cont_colnames.append(colname+suffix)
         return cont_colnames
 
-    def normalize_cont_cols_minmax(self, df, suffix=''):
+    def normalize_cont_cols_minmax(self, df, suffix: str = '') -> list[str]:
         """inplace min-max normalization of columns"""
         normalizer_info = self.normalizer_info_minmax
         cont_colnames = []
@@ -195,7 +195,7 @@ class MinMaxNormalizer:
                 cont_colnames.append(colname+suffix)
         return cont_colnames
 
-    def normalize_cont_cols_max(self, df, suffix=''):
+    def normalize_cont_cols_max(self, df, suffix: str = '') -> list[str]:
         """inplace max normalization of columns"""
         normalizer_info = self.normalizer_info_max
         cont_colnames = []
@@ -220,7 +220,7 @@ def get_seqlevel_featnames(suffix='_norm'):
                    norm_colnames[1:] + ['original_base_mt_nan', 'edited_base_mt_nan']
     return seqfeat_cols
 
-def create_datatensor(data_df: pd.DataFrame, proc_seq_init_df, num_init_cols,  proc_seq_mut_df, num_mut_cols, cont_cols, window=10, y_ref=[]) -> PEDataTensor:
+def create_datatensor(data_df: pd.DataFrame, proc_seq_init_df, num_init_cols, proc_seq_mut_df, num_mut_cols, cont_cols: list[str], window=10, y_ref=[]) -> PEDataTensor:
     """create a instance of DataTensor from processeed/cleaned dataframe
     
     Args:

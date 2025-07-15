@@ -120,7 +120,7 @@ class PRIEML_Model:
         # print(check_editing_alignment_correctness(tdf, correction_len_colname='Correction_Length_effective'))
         return norm_colnames, df, proc_seq_init_df,num_init_cols, proc_seq_mut_df, num_mut_cols
 
-    def _construct_datatensor(self, norm_colnames, df: pd.DataFrame, proc_seq_init_df,num_init_cols, proc_seq_mut_df, num_mut_cols, y_ref=[]):
+    def _construct_datatensor(self, norm_colnames: list[str], df: pd.DataFrame, proc_seq_init_df,num_init_cols, proc_seq_mut_df, num_mut_cols, y_ref=[]):
         print('--- creating datatensor ---')
         wsize=self.wsize # to read this from options dumped on disk
         dtensor = create_datatensor(df, 
