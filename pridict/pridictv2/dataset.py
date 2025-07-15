@@ -168,6 +168,8 @@ class MinMaxNormalizer:
         elif normalize_opt == 'standardize':
             print('--- standardized normalization ---')
             return self.normalize_cont_cols_meanstd(df, suffix=suffix)
+        else:
+            raise ValueError(f'Invalid normalization option: {normalize_opt}')
         
     def normalize_cont_cols_meanstd(self, df, suffix=''):
         """inplace min-max normalization of columns"""

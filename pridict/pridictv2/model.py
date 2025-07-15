@@ -35,6 +35,8 @@ class AnnotEmbeder_InitSeq(nn.Module):
             return self.We(X_nucl) + self.Wproto(X_proto) + self.Wpbs(X_pbs) + self.Wrt(X_rt)
         elif self.assemb_opt == 'stack':
             return torch.cat([self.We(X_nucl), self.Wproto(X_proto), self.Wpbs(X_pbs), self.Wrt(X_rt)], axis=-1)
+        else:
+            raise ValueError(f"Invalid assembly option: {self.assemb_opt}")
 
 
 class AnnotEmbeder_MutSeq(nn.Module):
@@ -57,6 +59,8 @@ class AnnotEmbeder_MutSeq(nn.Module):
             return self.We(X_nucl) + self.Wpbs(X_pbs) + self.Wrt(X_rt)
         elif self.assemb_opt == 'stack':
             return torch.cat([self.We(X_nucl), self.Wpbs(X_pbs), self.Wrt(X_rt)], axis=-1)
+        else:
+            raise ValueError(f"Invalid assembly option: {self.assemb_opt}")
 
 
 class SH_Attention(nn.Module):
