@@ -180,7 +180,9 @@ def editorcharacteristics(editor):
         PAM_side = 'right'
         primescaffoldseq = 'GTTTCAGAGCTATGCTGGAAACAGCATAGCAAGTTGAAATAAGGCTAGTCCGTTATCAACTTGAAAAAGTGGCACCGAGTCGGTGC'
         # primescaffoldseq = 'GTTTTAGAGCTAGAAATAGCAAGTTAAAATAAGGCTAGTCCGTTATCAACTTGAAAAAGTGGCACCGAGTCGGTGC'
-    return PAM, numberN, variant, protospacerlength, PAM_side, primescaffoldseq, PAM_length
+        return PAM, numberN, variant, protospacerlength, PAM_side, primescaffoldseq, PAM_length
+    else:
+        raise ValueError(f"Invalid editor: {editor}")
 
 
 def isDNA(sequence):
