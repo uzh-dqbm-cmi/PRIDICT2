@@ -104,6 +104,8 @@ def primesequenceparsing(sequence: str) -> object:
     elif '-' in sequence_set:  #deletion
         original_base = sequence.split('-')[1].split(')')[0]
         edited_base = '-'
+    else:
+        raise ValueError("Invalid sequence format: Deletion or insertion expected.")
 
     # ignore "-" in final sequences (deletions or insertions)
     if original_base == '-':
