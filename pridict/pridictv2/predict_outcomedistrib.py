@@ -11,7 +11,7 @@ from tqdm import tqdm
 from .hyperparam import get_saved_config
 from .utilities import ReaderWriter, build_predictions_df, check_na,switch_layer_to_traineval_mode,require_nonleaf_grad
 from .data_preprocess import PESeqProcessor
-from .dataset import create_datatensor, MinMaxNormalizer
+from .dataset import PEDataTensor, PEItem, create_datatensor, MinMaxNormalizer
 from ..rnn.rnn import RNN_Net
 
 from .model import AnnotEmbeder_InitSeq, AnnotEmbeder_MutSeq, FeatureEmbAttention, \
@@ -132,9 +132,9 @@ class PRIEML_Model:
   
         return dtensor
 
-    def _construct_dloader(self, dtensor, cell_types, batch_size: int | None) -> ConcatDataLoaders:
+    def _construct_dloader(self, dtensor: PEDataTensor, cell_types: list[str], batch_size: int | None) -> ConcatDataLoaders:
         print('--- creating datatloader ---')
-        dloader_lst = []
+        dloader_lst: list[DataLoader[PEItem]] = []
         for __ in cell_types:
             dloader = DataLoader(dtensor,
                                 batch_size=batch_size,
@@ -507,7 +507,7 @@ class PRIEML_Model:
                                               dset_names=dataset_ids_lst)
         return predictions_df
 
-    def prepare_data(self, df: pd.DataFrame, model_name, cell_types=[], y_ref=[], batch_size: int | None = 500) -> ConcatDataLoaders:
+    def prepare_data(self, df: pd.DataFrame, model_name, cell_types: list[str] = [], y_ref=[], batch_size: int | None = 500) -> ConcatDataLoaders:
         """
         Args:
             df: pandas dataframe

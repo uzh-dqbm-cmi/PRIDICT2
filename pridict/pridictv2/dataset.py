@@ -1,7 +1,8 @@
 import os
 from itertools import cycle
-from typing import Any, Literal
+from typing import Any, Iterator, Literal
 import numpy as np
+from numpy.typing import ArrayLike
 import pandas as pd
 from sklearn.model_selection import GroupShuffleSplit, GroupKFold
 import torch
@@ -9,7 +10,10 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader
 from .utilities import ContModelScore
 
-class PEDataTensor(Dataset):
+PEItem = tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, Any, Any, torch.Tensor, float | torch.Tensor, int, int]
+PEItemBatch = tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, Any, Any, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]
+
+class PEDataTensor(Dataset[PEItem]):
 
     def __init__(self, 
                  X_init_nucl: torch.Tensor, 
@@ -22,9 +26,9 @@ class PEDataTensor(Dataset):
                  seqlevel_feat: torch.Tensor,
                  seqlevel_feat_colnames: list[str],
                  y_score: torch.Tensor | None, 
-                 x_init_len: Any,
-                 x_mut_len: Any,
-                 indx_seqid_map: dict[int, Any]):
+                 x_init_len,
+                 x_mut_len,
+                 indx_seqid_map: dict[int, int]):
         # B: batch elements; T: sequence length
         # tensor.float32, (B, T), (sequence characters are mapped to 0-3) and 4 for padded characters
         self.X_init_nucl = X_init_nucl
@@ -47,7 +51,7 @@ class PEDataTensor(Dataset):
         self.indx_seqid_map = indx_seqid_map
         self.num_samples = self.X_init_nucl.size(0)  # int, number of sequences
 
-    def __getitem__(self, indx: int):
+    def __getitem__(self, indx: int) -> PEItem:
         if self.y_score is None:
             y_val = -1.
         else:
@@ -80,10 +84,10 @@ class PEDataTensor(Dataset):
                self.indx_seqid_map[indx])
 
 
-    def __len__(self):
+    def __len__(self) -> int:
         return(self.num_samples)
 
-class PartitionDataTensor(Dataset):
+class PartitionDataTensor(Dataset[PEItem]):
 
     def __init__(self, pe_datatensor: PEDataTensor, partition_ids: list[int], dsettype: str, run_num: int):
         self.pe_datatensor = pe_datatensor  # instance of :class:`PEDatatensor`
@@ -92,11 +96,11 @@ class PartitionDataTensor(Dataset):
         self.run_num = run_num  # int, run number
         self.num_samples = len(self.partition_ids[:])  # int, number of sequences in the partition
 
-    def __getitem__(self, indx: int):
+    def __getitem__(self, indx: int) -> PEItem:
         target_id = self.partition_ids[indx]
         return self.pe_datatensor[target_id]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return(self.num_samples)
 
 def extend_matrix(mat, ext_mat_shape, fill_val):
@@ -346,7 +350,7 @@ def create_datatensor(data_df: pd.DataFrame, proc_seq_init_df: pd.DataFrame, num
         print('--- aligned initial and mutated sequences ---')
 
     seq_ids = data_df['seq_id'].values
-    indx_seqid_map = {i:seq_ids[i] for i in range(len(seq_ids))}
+    indx_seqid_map: dict[int, str] = {i:seq_ids[i] for i in range(len(seq_ids))}
 
     if len(y_ref):
         # y_score = torch.from_numpy(data_df['y'].values).reshape(-1,1)
@@ -568,14 +572,14 @@ class ConcatDataLoaders():
     
     """
 
-    def __init__(self, dataloaders, dataset_names, mode: Literal['cycle', 'common_size'] = 'cycle'):
+    def __init__(self, dataloaders: list[DataLoader[PEItem]], dataset_names: list[str], mode: Literal['cycle', 'common_size'] = 'cycle'):
         self.dataloaders = dataloaders
         self.datasetnames = dataset_names
         self.mode = mode
         self.__len__()
         
     def __iter__(self):
-        self.dloader_iterators = []
+        self.dloader_iterators: list[Iterator[PEItemBatch]] = []
         for data_loader in self.dataloaders:
             if self.mode == 'cycle':
                 if len(data_loader) < self.max_num_batches:
@@ -590,7 +594,7 @@ class ConcatDataLoaders():
         return self
 
     def __next__(self):
-        batches_lst = []
+        batches_lst: list[PEItemBatch] = []
         for dloader_iter in self.dloader_iterators:
             batch = next(dloader_iter)
             batches_lst.append(batch)

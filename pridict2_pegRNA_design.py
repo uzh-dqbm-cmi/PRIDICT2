@@ -1062,7 +1062,7 @@ def run_processing_parallel(df: pd.DataFrame, pred_dir: Path, num_proc_arg: int,
 def remove_col(df, colname):
     if colname in df:
         del df[colname]
-def get_cell_types():
+def get_cell_types() -> list[str]:
     return ['HEK', 'K562']
 
 
