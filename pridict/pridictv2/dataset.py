@@ -583,6 +583,8 @@ class ConcatDataLoaders():
                     iterator = iter(data_loader)
             elif self.mode == 'common_size':
                 iterator = iter(data_loader)
+            else:
+                raise ValueError(f"Invalid mode: {self.mode}")
             self.dloader_iterators.append(iterator)
         return self
 
