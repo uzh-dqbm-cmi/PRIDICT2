@@ -227,7 +227,7 @@ def melting_temperature(protospacer, extension, RT, RToverhang, PBS, original_ba
     return protospacermt, extensionmt, RTmt, RToverhangmt, PBSmt, original_base_mt, edited_base_mt, original_base_mt_nan, edited_base_mt_nan
 
 
-def RToverhangmatches(RToverhang, edited_seq, RToverhangstartposition, RTlengthoverhang):
+def RToverhangmatches(RToverhang: str, edited_seq: str, RToverhangstartposition: int, RTlengthoverhang: int) -> int:
     """"Counts whether RToverhang matches up to 15bp downstream of designated position in edited_seq (e.g. due to repetitive motivs) which would prevent editing of certain deletions or insertions (e.g. A(A/-)AAA with 3bp RT overhang)"""
     RToverhangmatchcount = occurrences(
         edited_seq[RToverhangstartposition:RToverhangstartposition + RTlengthoverhang + 15], RToverhang)
@@ -241,7 +241,7 @@ def multideepeditpositionfunc(originalbases, editedbases, deepeditposition):
             multideepeditlist.append(deepeditposition+i)
     return multideepeditlist
 
-def occurrences(string, sub):
+def occurrences(string: str, sub: str) -> int:
     """"Gives total count of substring in string including overlapping substrings."""
     count = start = 0
     while True:
@@ -320,7 +320,7 @@ def load_pridict_model(run_ids: list[int] = [0]) -> ModelsList:
 
     return models_lst_dict
 
-def deeppridict(pegdataframe: pd.DataFrame, models_lst_dict: ModelsList):
+def deeppridict(pegdataframe: pd.DataFrame, models_lst_dict: ModelsList) -> dict[str, pd.DataFrame]:
     """Perform score prediction on dataframe of features based on RNN model.
     
     Args:
@@ -368,11 +368,11 @@ def deeppridict(pegdataframe: pd.DataFrame, models_lst_dict: ModelsList):
                                         y_ref=[], 
                                         batch_size=batch_size)
     
-    all_avg_preds = {} 
+    all_avg_preds: dict[str, pd.DataFrame] = {} 
 
     for model_id, model_runs_lst in models_lst_dict.items():
     
-        pred_dfs = [] # List to store prediction dataframes for each model
+        pred_dfs: list[pd.DataFrame] = [] # List to store prediction dataframes for each model
         
         runs_c = 0
         for loaded_model_lst, model_dir in model_runs_lst: # Iterate over each model

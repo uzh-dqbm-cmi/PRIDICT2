@@ -220,7 +220,7 @@ def get_seqlevel_featnames(suffix='_norm'):
                    norm_colnames[1:] + ['original_base_mt_nan', 'edited_base_mt_nan']
     return seqfeat_cols
 
-def create_datatensor(data_df: pd.DataFrame, proc_seq_init_df, num_init_cols, proc_seq_mut_df, num_mut_cols, cont_cols: list[str], window=10, y_ref=[]) -> PEDataTensor:
+def create_datatensor(data_df: pd.DataFrame, proc_seq_init_df: pd.DataFrame, num_init_cols: int, proc_seq_mut_df: pd.DataFrame, num_mut_cols: int, cont_cols: list[str], window=10, y_ref=[]) -> PEDataTensor:
     """create a instance of DataTensor from processeed/cleaned dataframe
     
     Args:

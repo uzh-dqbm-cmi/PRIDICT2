@@ -1,5 +1,5 @@
 import os
-from typing import Union
+from typing import Literal, Union
 import numpy as np
 import pandas as pd
 import torch
@@ -32,7 +32,7 @@ PridictBaseModel = (
 PridictBaseModels = list[tuple[PridictBaseModel, str]]
 
 class PRIEML_Model:
-    def __init__(self, device, wsize=20, normalize='none', include_MFE=False, include_addendumfeat=False,  normalizer_dict=None, fdtype=torch.float32):
+    def __init__(self, device, wsize=20, normalize: Literal['none', 'max', 'minmax', 'standardize']='none', include_MFE=False, include_addendumfeat=False,  normalizer_dict=None, fdtype=torch.float32):
         self.device = device
         self.wsize = wsize
         self.normalize = normalize
@@ -56,10 +56,10 @@ class PRIEML_Model:
                                         'base_390k_decinit_HEKhyongbum_FT':['HEK', 'K562'],
                                         'base_390k_decinit_HEKschwank_FT':['HEK', 'K562']}
         
-    def get_celltypes(self, modelname):
+    def get_celltypes(self, modelname: str) -> list[str]:
         return self.modelnames_celltype_map[modelname]
 
-    def _process_df(self, df):
+    def _process_df(self, df: pd.DataFrame) -> tuple[list[str], pd.DataFrame, pd.DataFrame, int, pd.DataFrame, int]:
         """
         Args:
             df: pandas dataframe
@@ -120,7 +120,7 @@ class PRIEML_Model:
         # print(check_editing_alignment_correctness(tdf, correction_len_colname='Correction_Length_effective'))
         return norm_colnames, df, proc_seq_init_df,num_init_cols, proc_seq_mut_df, num_mut_cols
 
-    def _construct_datatensor(self, norm_colnames: list[str], df: pd.DataFrame, proc_seq_init_df,num_init_cols, proc_seq_mut_df, num_mut_cols, y_ref=[]):
+    def _construct_datatensor(self, norm_colnames: list[str], df: pd.DataFrame, proc_seq_init_df: pd.DataFrame, num_init_cols: int, proc_seq_mut_df: pd.DataFrame, num_mut_cols: int, y_ref=[]):
         print('--- creating datatensor ---')
         wsize=self.wsize # to read this from options dumped on disk
         dtensor = create_datatensor(df, 
@@ -570,7 +570,7 @@ class PRIEML_Model:
         pred_df = self._run_prediction(models, dloader, y_ref=y_ref)
         return pred_df
 
-    def compute_avg_predictions(self, df):
+    def compute_avg_predictions(self, df: pd.DataFrame) -> pd.DataFrame:
         grp_cols = ['seq_id']
         if 'dataset_name' in df:
             grp_cols += ['dataset_name']
