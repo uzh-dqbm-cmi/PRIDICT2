@@ -1,3 +1,4 @@
+from typing import Literal
 import torch
 from torch import nn
 
@@ -5,7 +6,7 @@ class MaskGenerator():
     def __init__(self):
         pass
     @classmethod
-    def create_content_mask(clss, x_mask_shape, x_len):
+    def create_content_mask(cls, x_mask_shape: tuple[int, int], x_len):
         """
         Args:
             x_mask_shape: tuple, (bsize, max_seqlen)
@@ -17,7 +18,7 @@ class MaskGenerator():
         return x_mask
 
 class AnnotEmbeder_InitSeq(nn.Module):
-    def __init__(self, embed_dim, annot_embed, assemb_opt='add'):
+    def __init__(self, embed_dim: int, annot_embed: int, assemb_opt: Literal['add', 'stack'] = 'add'):
         super().__init__()
         self.num_nucl = 5 # nucleotide embeddings
         self.num_pbs_inidc = 2 # binary embedding
@@ -30,15 +31,17 @@ class AnnotEmbeder_InitSeq(nn.Module):
         self.Wpbs = nn.Embedding(self.num_pbs_inidc+1, annot_embed, padding_idx=self.num_pbs_inidc)
         self.Wrt = nn.Embedding(self.num_annot_inidc+1, annot_embed, padding_idx=self.num_annot_inidc)
     
-    def forward(self, X_nucl, X_proto, X_pbs, X_rt):
+    def forward(self, X_nucl: torch.Tensor, X_proto: torch.Tensor, X_pbs: torch.Tensor, X_rt: torch.Tensor) -> torch.Tensor:
         if self.assemb_opt == 'add':
             return self.We(X_nucl) + self.Wproto(X_proto) + self.Wpbs(X_pbs) + self.Wrt(X_rt)
         elif self.assemb_opt == 'stack':
             return torch.cat([self.We(X_nucl), self.Wproto(X_proto), self.Wpbs(X_pbs), self.Wrt(X_rt)], axis=-1)
+        else:
+            raise ValueError(f"Invalid assembly option: {self.assemb_opt}")
 
 
 class AnnotEmbeder_MutSeq(nn.Module):
-    def __init__(self, embed_dim, annot_embed, assemb_opt='add'):
+    def __init__(self, embed_dim: int, annot_embed: int, assemb_opt: Literal['add', 'stack'] = 'add'):
         super().__init__()
 
         self.num_nucl = 5 # nucleotide embeddings
@@ -52,17 +55,19 @@ class AnnotEmbeder_MutSeq(nn.Module):
         self.Wpbs = nn.Embedding(self.num_pbs_inidc+1, annot_embed, padding_idx=self.num_pbs_inidc)
         self.Wrt = nn.Embedding(self.num_annot_inidc+1, annot_embed, padding_idx=self.num_annot_inidc)
     
-    def forward(self, X_nucl, X_pbs, X_rt):
+    def forward(self, X_nucl: torch.Tensor, X_pbs: torch.Tensor, X_rt: torch.Tensor) -> torch.Tensor:
         if self.assemb_opt == 'add':
             return self.We(X_nucl) + self.Wpbs(X_pbs) + self.Wrt(X_rt)
         elif self.assemb_opt == 'stack':
             return torch.cat([self.We(X_nucl), self.Wpbs(X_pbs), self.Wrt(X_rt)], axis=-1)
+        else:
+            raise ValueError(f"Invalid assembly option: {self.assemb_opt}")
 
 
 class SH_Attention(nn.Module):
     """ single head self-attention module
     """
-    def __init__(self, input_size, embed_size):
+    def __init__(self, input_size: int, embed_size: int):
         
         super().__init__()
         # define query, key and value transformation matrices
@@ -140,7 +145,7 @@ class SH_Attention(nn.Module):
 
 
 class FeatureEmbAttention(nn.Module):
-    def __init__(self, input_dim):
+    def __init__(self, input_dim: int):
         '''
         Args:
             input_dim: int, size of the input vector (i.e. feature vector)
@@ -153,7 +158,7 @@ class FeatureEmbAttention(nn.Module):
         self.softmax = nn.Softmax(dim=1) # normalized across seqlen
         self.neg_inf = -1e6
 
-    def forward(self, X, mask=None):
+    def forward(self, X: torch.Tensor, mask=None):
         '''Performs forward computation
         Args:
             X: torch.Tensor, (bsize, seqlen, feature_dim), dtype=torch.float32
@@ -195,12 +200,12 @@ class FeatureEmbAttention(nn.Module):
 
 class MLPEmbedder(nn.Module):
     def __init__(self,
-                 inp_dim,
-                 embed_dim,
-                 mlp_embed_factor=2,
-                 nonlin_func=nn.ReLU(), 
-                 pdropout=0.3, 
-                 num_encoder_units=2):
+                 inp_dim: int,
+                 embed_dim: int,
+                 mlp_embed_factor: int = 2,
+                 nonlin_func: nn.Module = nn.ReLU(), 
+                 pdropout: float = 0.3, 
+                 num_encoder_units: int = 2):
         
         super().__init__()
         
@@ -214,7 +219,7 @@ class MLPEmbedder(nn.Module):
 
         self.encunit_pipeline = nn.Sequential(*encunit_layers)
 
-    def forward(self, X):
+    def forward(self, X: torch.Tensor) -> torch.Tensor:
         """
         Args:
             X: tensor, float32, (batch, embed_dim) representing x_target
@@ -227,11 +232,11 @@ class MLPEmbedder(nn.Module):
 class MLPBlock(nn.Module):
             
     def __init__(self,
-                 input_dim,
-                 embed_dim,
-                 mlp_embed_factor,
-                 nonlin_func, 
-                 pdropout):
+                 input_dim: int,
+                 embed_dim: int,
+                 mlp_embed_factor: int,
+                 nonlin_func: nn.Module, 
+                 pdropout: float):
         
         super().__init__()
         
@@ -246,7 +251,7 @@ class MLPBlock(nn.Module):
         )
         self.dropout = nn.Dropout(p=pdropout)
 
-    def forward(self, X):
+    def forward(self, X: torch.Tensor) -> torch.Tensor:
         """
         Args:
             X: input tensor, (batch, sequence length, input_dim)
@@ -258,14 +263,14 @@ class MLPBlock(nn.Module):
 
 class MLPDecoder(nn.Module):
     def __init__(self,
-                 inp_dim,
-                 embed_dim,
-                 outp_dim,
-                 mlp_embed_factor=2,
-                 nonlin_func=nn.ReLU(), 
-                 pdropout=0.3, 
-                 num_encoder_units=2,
-                 infer_sigma=False):
+                 inp_dim: int,
+                 embed_dim: int,
+                 outp_dim: int,
+                 mlp_embed_factor: int =2,
+                 nonlin_func: nn.Module = nn.ReLU(), 
+                 pdropout: float = 0.3, 
+                 num_encoder_units: int = 2,
+                 infer_sigma: bool = False):
         
         super().__init__()
 
@@ -307,13 +312,13 @@ class MLPDecoder(nn.Module):
 
 class MLPDecoderDistribution(nn.Module):
     def __init__(self,
-                 inp_dim,
-                 embed_dim,
-                 outp_dim,
-                 mlp_embed_factor=2,
-                 nonlin_func=nn.ReLU(), 
-                 pdropout=0.3, 
-                 num_encoder_units=2):
+                 inp_dim: int,
+                 embed_dim: int,
+                 outp_dim: int,
+                 mlp_embed_factor: int = 2,
+                 nonlin_func: nn.Module = nn.ReLU(), 
+                 pdropout: float = 0.3, 
+                 num_encoder_units: int = 2):
         
         super().__init__()
         

@@ -43,6 +43,8 @@ from Bio.SeqUtils import MeltingTemp as mt
 import pandas as pd
 import os
 import time
+from typing import Literal
+import torch
 import torch.multiprocessing as mp
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 mp.set_start_method("spawn", force=True)
@@ -59,8 +61,10 @@ from pridict.pridictv2.utilities import *
 from pridict.pridictv2.dataset import *
 from pridict.pridictv2.predict_outcomedistrib import *
 
+ModelsList = dict[str, list[tuple[PridictBaseModels, str]]]
+EditorName = Literal['PE2-NGG']
 
-def primesequenceparsing(sequence: str) -> object:
+def primesequenceparsing(sequence: str):
     """
     Function which takes target sequence with desired edit as input and 
     editing characteristics as output. Edit within brackets () and original
@@ -104,6 +108,8 @@ def primesequenceparsing(sequence: str) -> object:
     elif '-' in sequence_set:  #deletion
         original_base = sequence.split('-')[1].split(')')[0]
         edited_base = '-'
+    else:
+        raise ValueError("Invalid sequence format: Deletion or insertion expected.")
 
     # ignore "-" in final sequences (deletions or insertions)
     if original_base == '-':
@@ -170,7 +176,7 @@ def primesequenceparsing(sequence: str) -> object:
     return original_base, edited_base, original_seq, edited_seq, editposition_left, editposition_right, mutation_type, correction_length, basebefore_temp, baseafter_temp
 
 
-def editorcharacteristics(editor):
+def editorcharacteristics(editor: EditorName):
     if editor == 'PE2-NGG':
         PAM = '(?=GG)'
         numberN = 1
@@ -180,7 +186,9 @@ def editorcharacteristics(editor):
         PAM_side = 'right'
         primescaffoldseq = 'GTTTCAGAGCTATGCTGGAAACAGCATAGCAAGTTGAAATAAGGCTAGTCCGTTATCAACTTGAAAAAGTGGCACCGAGTCGGTGC'
         # primescaffoldseq = 'GTTTTAGAGCTAGAAATAGCAAGTTAAAATAAGGCTAGTCCGTTATCAACTTGAAAAAGTGGCACCGAGTCGGTGC'
-    return PAM, numberN, variant, protospacerlength, PAM_side, primescaffoldseq, PAM_length
+        return PAM, numberN, variant, protospacerlength, PAM_side, primescaffoldseq, PAM_length
+    else:
+        raise ValueError(f"Invalid editor: {editor}")
 
 
 def isDNA(sequence):
@@ -219,7 +227,7 @@ def melting_temperature(protospacer, extension, RT, RToverhang, PBS, original_ba
     return protospacermt, extensionmt, RTmt, RToverhangmt, PBSmt, original_base_mt, edited_base_mt, original_base_mt_nan, edited_base_mt_nan
 
 
-def RToverhangmatches(RToverhang, edited_seq, RToverhangstartposition, RTlengthoverhang):
+def RToverhangmatches(RToverhang: str, edited_seq: str, RToverhangstartposition: int, RTlengthoverhang: int) -> int:
     """"Counts whether RToverhang matches up to 15bp downstream of designated position in edited_seq (e.g. due to repetitive motivs) which would prevent editing of certain deletions or insertions (e.g. A(A/-)AAA with 3bp RT overhang)"""
     RToverhangmatchcount = occurrences(
         edited_seq[RToverhangstartposition:RToverhangstartposition + RTlengthoverhang + 15], RToverhang)
@@ -233,7 +241,7 @@ def multideepeditpositionfunc(originalbases, editedbases, deepeditposition):
             multideepeditlist.append(deepeditposition+i)
     return multideepeditlist
 
-def occurrences(string, sub):
+def occurrences(string: str, sub: str) -> int:
     """"Gives total count of substring in string including overlapping substrings."""
     count = start = 0
     while True:
@@ -287,7 +295,7 @@ def get_prieml_model_template():
     prieml_model = PRIEML_Model(device, wsize=wsize, normalize=normalize_opt, fdtype=torch.float32)
     return prieml_model
 
-def load_pridict_model(run_ids=[0]):
+def load_pridict_model(run_ids: list[int] = [0]) -> ModelsList:
     """construct and return PRIDICT model along with model files directory """
     models_lst_dict = {}  # Initialize a dictionary to hold lists of models keyed by model_id
     repo_dir = os.path.dirname(os.path.abspath(__file__))
@@ -300,7 +308,7 @@ def load_pridict_model(run_ids=[0]):
     prieml_model = get_prieml_model_template()
 
     for model_desc_tup in modellist:
-        models_lst = []  # Initialize models_lst for each model
+        models_lst: list[tuple[PridictBaseModels, str]] = []  # Initialize models_lst for each model
         model_id, __, mfolder = model_desc_tup
 
         for run_num in run_ids: # add the different model runs (i.e. based on 5 folds)
@@ -312,7 +320,7 @@ def load_pridict_model(run_ids=[0]):
 
     return models_lst_dict
 
-def deeppridict(pegdataframe, models_lst_dict):
+def deeppridict(pegdataframe: pd.DataFrame, models_lst_dict: ModelsList) -> dict[str, pd.DataFrame]:
     """Perform score prediction on dataframe of features based on RNN model.
     
     Args:
@@ -360,11 +368,11 @@ def deeppridict(pegdataframe, models_lst_dict):
                                         y_ref=[], 
                                         batch_size=batch_size)
     
-    all_avg_preds = {} 
+    all_avg_preds: dict[str, pd.DataFrame] = {} 
 
     for model_id, model_runs_lst in models_lst_dict.items():
     
-        pred_dfs = [] # List to store prediction dataframes for each model
+        pred_dfs: list[pd.DataFrame] = [] # List to store prediction dataframes for each model
         
         runs_c = 0
         for loaded_model_lst, model_dir in model_runs_lst: # Iterate over each model
@@ -458,7 +466,7 @@ def primerdesign(seq):
     return primerdf_short, primerdf
 
 
-def parallel_batch_analysis(inp_dir, inp_fname, out_dir, num_proc_arg, nicking, ngsprimer, run_ids=[0]):
+def parallel_batch_analysis(inp_dir: Path, inp_fname: str, out_dir: Path, num_proc_arg: int, nicking: bool, ngsprimer: bool, run_ids: list[int] = [0]):
     """Perform pegRNA predictions in batch-mode."""
     batchsequencedf = pd.read_csv(os.path.join(inp_dir, inp_fname))
     log_entries = []
@@ -512,8 +520,8 @@ def parallel_batch_analysis(inp_dir, inp_fname, out_dir, num_proc_arg, nicking, 
     # Save the log file in the specified directory
     log_df.to_csv(os.path.join(log_dir, log_filename), index=False)
 
-def pegRNAfinder(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer,
-                 editor='PE2-NGG', PBSlength_variants=PBSlengthrange, windowsize=windowsize_max,
+def pegRNAfinder(dfrow, models_list: ModelsList, queue, pindx, pred_dir: Path, nicking: bool, ngsprimer: bool,
+                 editor: EditorName = 'PE2-NGG', PBSlength_variants=PBSlengthrange, windowsize=windowsize_max,
                  RTseqoverhang_variants=RToverhanglengthrange):
     """Find pegRNAs and prediction scores for a set desired edit."""
     error_message = None
@@ -992,7 +1000,7 @@ def compute_average_predictions(df, grp_cols=['seq_id', 'dataset_name']):
 
 # editseq_test = 'GCCTGGAGGTGTCTGGGTCCCTCCCCCACCCGACTACTTCACTCTCTGTCCTCTCTGCCCAGGAGCCCAGGATGTGCGAGTTCAAGTGCTACCCGA(G/C)GTGCGAGGCCAGCTCGGGGGCACCGTGGAGCTGCCGTGCCACCTGCTGCCACCTGTTCCTGGACTGTACATCTCCCTGGTGACCTGGCAGCGCCCAGATGCACCTGCGAACCACCAGAATGTGGCCGC'
 
-def run_processing_parallel(df, pred_dir, num_proc_arg, nicking, ngsprimer, run_ids, log_entries):
+def run_processing_parallel(df: pd.DataFrame, pred_dir: Path, num_proc_arg: int, nicking: bool, ngsprimer: bool, run_ids: list[int], log_entries):
 
     queue = mp.Queue()
     q_processes = []
@@ -1054,19 +1062,19 @@ def run_processing_parallel(df, pred_dir, num_proc_arg, nicking, ngsprimer, run_
 def remove_col(df, colname):
     if colname in df:
         del df[colname]
-def get_cell_types():
+def get_cell_types() -> list[str]:
     return ['HEK', 'K562']
 
 
-def spawn_q_process(q_process):
+def spawn_q_process(q_process: mp.Process):
     print(">>> spawning row computation process")
     q_process.start()
     
-def join_q_process(q_process):
+def join_q_process(q_process: mp.Process):
     q_process.join()
     print("<<< joined row computation process")
     
-def create_q_process(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer):
+def create_q_process(dfrow, models_list: ModelsList, queue, pindx, pred_dir: Path, nicking: bool, ngsprimer: bool) -> mp.Process:
     return mp.Process(target=pegRNAfinder, args=(dfrow, models_list, queue, pindx, pred_dir, nicking, ngsprimer))
 
 def summarize_top_scoring(out_dir, summary_filename, cell_type, top_n):

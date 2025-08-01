@@ -1,4 +1,5 @@
 import os
+from typing import Literal, Union
 import numpy as np
 import pandas as pd
 import torch
@@ -10,7 +11,7 @@ from tqdm import tqdm
 from .hyperparam import get_saved_config
 from .utilities import ReaderWriter, build_predictions_df, check_na,switch_layer_to_traineval_mode,require_nonleaf_grad
 from .data_preprocess import PESeqProcessor
-from .dataset import create_datatensor, MinMaxNormalizer
+from .dataset import PEDataTensor, PEItem, create_datatensor, MinMaxNormalizer
 from ..rnn.rnn import RNN_Net
 
 from .model import AnnotEmbeder_InitSeq, AnnotEmbeder_MutSeq, FeatureEmbAttention, \
@@ -19,8 +20,19 @@ from .hyperparam import RNNHyperparamConfig
 from .dataset import ConcatDataLoaders
 from .data_preprocess import Viz_PESeqs, check_editing_alignment_correctness
 
+PridictBaseModel = (
+    AnnotEmbeder_InitSeq 
+    | AnnotEmbeder_MutSeq 
+    | RNN_Net 
+    | FeatureEmbAttention
+    | MLPEmbedder
+    | MLPDecoderDistribution
+    | MLPDecoder 
+)
+PridictBaseModels = list[tuple[PridictBaseModel, str]]
+
 class PRIEML_Model:
-    def __init__(self, device, wsize=20, normalize='none', include_MFE=False, include_addendumfeat=False,  normalizer_dict=None, fdtype=torch.float32):
+    def __init__(self, device, wsize=20, normalize: Literal['none', 'max', 'minmax', 'standardize']='none', include_MFE=False, include_addendumfeat=False,  normalizer_dict=None, fdtype=torch.float32):
         self.device = device
         self.wsize = wsize
         self.normalize = normalize
@@ -44,10 +56,10 @@ class PRIEML_Model:
                                         'base_390k_decinit_HEKhyongbum_FT':['HEK', 'K562'],
                                         'base_390k_decinit_HEKschwank_FT':['HEK', 'K562']}
         
-    def get_celltypes(self, modelname):
+    def get_celltypes(self, modelname: str) -> list[str]:
         return self.modelnames_celltype_map[modelname]
 
-    def _process_df(self, df):
+    def _process_df(self, df: pd.DataFrame) -> tuple[list[str], pd.DataFrame, pd.DataFrame, int, pd.DataFrame, int]:
         """
         Args:
             df: pandas dataframe
@@ -108,7 +120,7 @@ class PRIEML_Model:
         # print(check_editing_alignment_correctness(tdf, correction_len_colname='Correction_Length_effective'))
         return norm_colnames, df, proc_seq_init_df,num_init_cols, proc_seq_mut_df, num_mut_cols
 
-    def _construct_datatensor(self, norm_colnames, df, proc_seq_init_df,num_init_cols, proc_seq_mut_df, num_mut_cols, y_ref=[]):
+    def _construct_datatensor(self, norm_colnames: list[str], df: pd.DataFrame, proc_seq_init_df: pd.DataFrame, num_init_cols: int, proc_seq_mut_df: pd.DataFrame, num_mut_cols: int, y_ref=[]):
         print('--- creating datatensor ---')
         wsize=self.wsize # to read this from options dumped on disk
         dtensor = create_datatensor(df, 
@@ -120,9 +132,9 @@ class PRIEML_Model:
   
         return dtensor
 
-    def _construct_dloader(self, dtensor, cell_types, batch_size):
+    def _construct_dloader(self, dtensor: PEDataTensor, cell_types: list[str], batch_size: int | None) -> ConcatDataLoaders:
         print('--- creating datatloader ---')
-        dloader_lst = []
+        dloader_lst: list[DataLoader[PEItem]] = []
         for __ in cell_types:
             dloader = DataLoader(dtensor,
                                 batch_size=batch_size,
@@ -138,7 +150,7 @@ class PRIEML_Model:
         mconfig, options = get_saved_config(mconfig_dir)
         return mconfig, options
 
-    def _build_base_model(self, config, cell_types=[]):
+    def _build_base_model(self, config, cell_types=[]) -> PridictBaseModels:
         print('--- building model ---')
         device = self.device
         mconfig, options = config
@@ -214,7 +226,7 @@ class PRIEML_Model:
         #                                    pdropout=model_config.p_dropout, 
         #                                    num_encoder_units=1)
         
-        seqlevel_embedder_lst = []
+        seqlevel_embedder_lst: list[tuple[MLPEmbedder, str]] = []
         mlp_embed_factor = 1
         if separate_seqlevel_embedder:
             for dname in datasets_name_lst:
@@ -235,10 +247,10 @@ class PRIEML_Model:
             seqlevel_embedder_lst.append((seqlevel_featembeder, f'seqlevel_featembeder'))
 
         if separate_attention_layers:
-            attn_modules_lst = []
+            attn_modules_lst: list[list[tuple[FeatureEmbAttention, str]]] = []
             seq_types = ['init', 'mut']
             for dname in datasets_name_lst:
-                tmp_lst = []
+                tmp_lst: list[tuple[FeatureEmbAttention, str]] = []
                 for seq_type in seq_types: # original and mutated
                     for attn_type in ['local', 'global']:
                         tmp_lst.append((FeatureEmbAttention(z_dim), f'{attn_type}_featemb_{seq_type}_attn_{dname}'))
@@ -246,9 +258,9 @@ class PRIEML_Model:
             # print('using separate attention layers!!')
             # print(attn_modules_lst)
         else:
-            attn_modules_lst = []
+            attn_modules_lst: list[list[tuple[FeatureEmbAttention, str]]] = []
             seq_types = ['init', 'mut']
-            tmp_lst = []
+            tmp_lst: list[tuple[FeatureEmbAttention, str]] = []
             for seq_type in seq_types: # original and mutated
                 for attn_type in ['local', 'global']:
                     tmp_lst.append((FeatureEmbAttention(z_dim), f'{attn_type}_featemb_{seq_type}_attn'))
@@ -257,7 +269,7 @@ class PRIEML_Model:
         # print('loss_func:', loss_func)
         if loss_func in {'KLDloss', 'CEloss'}:
             # print('using MLPDecoderDistribution')
-            decoder_lst = []
+            decoder_lst: list[tuple[MLPDecoderDistribution | MLPDecoder, str]] = []
             for dname in datasets_name_lst:
                 decoder  = MLPDecoderDistribution(5*z_dim,
                                                 embed_dim=z_dim,
@@ -269,7 +281,7 @@ class PRIEML_Model:
                 decoder_lst.append((decoder,f'decoder_{dname}'))
         else:
             # print('using MLPDecoder')
-            decoder_lst = []
+            decoder_lst: list[tuple[MLPDecoderDistribution | MLPDecoder, str]] = []
             for dname in datasets_name_lst:
                 decoder  = MLPDecoder(5*z_dim,
                                     embed_dim=z_dim,
@@ -283,7 +295,7 @@ class PRIEML_Model:
 
 
         # group submodels
-        models = [(init_annot_embed, 'init_annot_embed'), 
+        models: PridictBaseModels = [(init_annot_embed, 'init_annot_embed'), 
                   (mut_annot_embed, 'mut_annot_embed'),
                   (init_encoder, 'init_encoder'),
                   (mut_encoder, 'mut_encoder')]
@@ -297,7 +309,7 @@ class PRIEML_Model:
         # 4 + num_dsets*4 + num_dsest + num_dset
         return models
 
-    def _load_model_statedict_(self, models, model_dir):
+    def _load_model_statedict_(self, models: PridictBaseModels, model_dir: str):
         print('--- loading trained model ---')
         device = self.device
         fdtype = self.fdtype
@@ -311,7 +323,7 @@ class PRIEML_Model:
             m.eval()
         return models
 
-    def _run_prediction(self, models, dloader, y_ref=[]):
+    def _run_prediction(self, models: PridictBaseModels, dloader: ConcatDataLoaders, y_ref=[]):
 
         device = self.device
         fdtype = self.fdtype
@@ -495,7 +507,7 @@ class PRIEML_Model:
                                               dset_names=dataset_ids_lst)
         return predictions_df
 
-    def prepare_data(self, df, model_name, cell_types=[], y_ref=[], batch_size=500):
+    def prepare_data(self, df: pd.DataFrame, model_name, cell_types: list[str] = [], y_ref=[], batch_size: int | None = 500) -> ConcatDataLoaders:
         """
         Args:
             df: pandas dataframe
@@ -524,7 +536,7 @@ class PRIEML_Model:
         return dloader
 
 
-    def build_retrieve_models(self, model_dir):
+    def build_retrieve_models(self, model_dir: str) -> PridictBaseModels:
 
         mconfig_dir = os.path.join(model_dir, 'config')
         mconfig = self._load_model_config(mconfig_dir)
@@ -539,7 +551,7 @@ class PRIEML_Model:
         return models
 
 
-    def predict_from_dloader(self, dloader, model_dir, y_ref=[]):
+    def predict_from_dloader(self, dloader: ConcatDataLoaders, model_dir, y_ref=[]):
         
         cell_types = dloader.datasetnames
         mconfig_dir = os.path.join(model_dir, 'config')
@@ -554,11 +566,11 @@ class PRIEML_Model:
 
         return pred_df
 
-    def predict_from_dloader_using_loaded_models(self, dloader, models, y_ref=[]):
+    def predict_from_dloader_using_loaded_models(self, dloader: ConcatDataLoaders, models: PridictBaseModels, y_ref=[]):
         pred_df = self._run_prediction(models, dloader, y_ref=y_ref)
         return pred_df
 
-    def compute_avg_predictions(self, df):
+    def compute_avg_predictions(self, df: pd.DataFrame) -> pd.DataFrame:
         grp_cols = ['seq_id']
         if 'dataset_name' in df:
             grp_cols += ['dataset_name']

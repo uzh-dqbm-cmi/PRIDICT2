@@ -173,7 +173,7 @@ class PESeqProcessor:
         return r_df
     
     
-    def mark_annotations(self, df):
+    def mark_annotations(self, df: pd.DataFrame) -> pd.DataFrame:
 
         col_name_map = {'protospacerlocation_only_initial': 'Protos',
                         'PBSlocation': 'PBS',
@@ -241,7 +241,7 @@ class PESeqProcessor:
         return df 
  
 
-    def add_seq_annotations(self, data_df, num_cols, align_symbol):
+    def add_seq_annotations(self, data_df: pd.DataFrame, num_cols: int, align_symbol) -> pd.DataFrame:
         """
 
         Args:
@@ -301,7 +301,7 @@ class PESeqProcessor:
 
         return data_df
     
-    def split_matrices(self, df, num_cols):
+    def split_matrices(self, df: pd.DataFrame, num_cols: int) -> tuple[pd.DataFrame, pd.DataFrame]:
         tcolnames = []
         for colname in ['Protos', 'PBS', 'RT_init']:
             tcolnames += [f'{colname}{i}' for i in range(0, num_cols)]
@@ -319,7 +319,7 @@ class PESeqProcessor:
         proc_mut_df = df[tcolnames]
         return proc_init_df, proc_mut_df
 
-    def process_init_mut_seq_visual(self, df, init_seq_colname, mut_seq_colname, align_symbol=2):
+    def process_init_mut_seq_visual(self, df: pd.DataFrame, init_seq_colname: str, mut_seq_colname: str, align_symbol=2):
         """
         
         Args:
@@ -340,7 +340,7 @@ class PESeqProcessor:
         tdf = self.add_seq_annotations(tdf, max_num_cols, align_symbol)
         return tdf
 
-    def process_init_mut_seqs(self, df, init_seq_colname, mut_seq_colname, align_symbol=2):
+    def process_init_mut_seqs(self, df: pd.DataFrame, init_seq_colname: str, mut_seq_colname: str, align_symbol: int=2) -> tuple[pd.DataFrame, pd.DataFrame, int, pd.DataFrame, int]:
         """
         
         Args:
@@ -380,7 +380,7 @@ class PESeqProcessor:
         return tdf, proc_seq_init_df, num_init_cols,  proc_seq_mut_df, num_mut_cols
     
         
-    def process_perbase_df(self, df, seqid_colname, seq_colname):
+    def process_perbase_df(self, df: pd.DataFrame, seqid_colname: str, seq_colname: str) -> tuple[pd.DataFrame, int]:
         """cleans a data frame representing sequences and their edit info obtained from crispr experiment
         
         Args:
