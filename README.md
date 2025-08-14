@@ -19,7 +19,7 @@
 
 ## 1. Overview
 
-[PRIDICT2.0](https://rdcu.be/dLu0f) is an advanced version of the original [PRIDICT](https://rdcu.be/c3IM5) model designed for predicting the efficiency of prime editing guide RNAs. This repository allows you to run the model locally. For details on advancements over the original model, refer to our published study ([Mathis et al., Nature Biotechnology, 2024](https://rdcu.be/dLu0f)) and the initial [BioRxiv preprint](https://www.biorxiv.org/content/10.1101/2023.10.09.561414v1).
+[PRIDICT2.0](https://rdcu.be/dLu0f) is an advanced version of the original [PRIDICT](https://rdcu.be/c3IM5) model designed for predicting the efficiency of prime editing guide RNAs. This repository allows you to run the model locally. For details on advancements over the original model, refer to our published study ([Mathis et al., Nature Biotechnology, 2024](https://rdcu.be/dLu0f)) and the initial [BioRxiv preprint](https://www.biorxiv.org/content/10.1101/2023.10.09.561414v1). For comprehensive step-by-step instructions, including practical tips for high-throughput screening, see our detailed protocol ([Mathis et al., Nature Protocols, 2025](https://rdcu.be/eAIEQ)).
 
 ## 2. Complementary Models
 
@@ -28,6 +28,7 @@
 
 ## 3. Additional Resources
 
+- **Protocol Paper**: For detailed step-by-step instructions on using PRIDICT2.0 and ePRIDICT, including practical tips & tricks for high-throughput screening, see our comprehensive protocol: [Mathis et al., Nature Protocols, 2025](https://rdcu.be/eAIEQ)
 - **Supplementary Files**: [Access Here](https://github.com/Schwank-Lab/epridict/tree/supplementary_files)
 - **Web Application**: For an online version of PRIDICT2.0, visit [our webapp](https://pridict.it/).
 
@@ -65,7 +66,17 @@ If find our work useful for your research please cite:
   doi={10.1038/s41587-022-01613-7}
 }
 ```
-
+- [Mathis et al., Nature Protocols, 2025](https://rdcu.be/eAIEQ) (Protocol):
+```bibtex
+@article{mathis2025systematic,
+  title={Systematic pegRNA design with PRIDICT2.0 and ePRIDICT for efficient prime editing},
+  author={Mathis, Nicolas and Marquart, Kim Fabiano and Allam, Ahmed and Krauthammer, Michael and Schwank, Gerald},
+  journal={Nature Protocols},
+  year={2025},
+  publisher={Nature Publishing Group},
+  doi={10.1038/s41596-025-01244-7}
+}
+```
 
 
 
