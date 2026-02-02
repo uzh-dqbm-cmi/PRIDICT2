@@ -1,6 +1,8 @@
 import os
 from itertools import cycle
+from typing import Any, Iterator, Literal
 import numpy as np
+from numpy.typing import ArrayLike
 import pandas as pd
 from sklearn.model_selection import GroupShuffleSplit, GroupKFold
 import torch
@@ -8,22 +10,25 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader
 from .utilities import ContModelScore
 
-class PEDataTensor(Dataset):
+PEItem = tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, Any, Any, torch.Tensor, float | torch.Tensor, int, int]
+PEItemBatch = tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, Any, Any, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]
+
+class PEDataTensor(Dataset[PEItem]):
 
     def __init__(self, 
-                 X_init_nucl, 
-                 X_init_proto, 
-                 X_init_pbs,
-                 X_init_rt,
-                 X_mut_nucl,
-                 X_mut_pbs,
-                 X_mut_rt,
-                 seqlevel_feat,
-                 seqlevel_feat_colnames,
-                 y_score, 
+                 X_init_nucl: torch.Tensor, 
+                 X_init_proto: torch.Tensor, 
+                 X_init_pbs: torch.Tensor,
+                 X_init_rt: torch.Tensor,
+                 X_mut_nucl: torch.Tensor,
+                 X_mut_pbs: torch.Tensor,
+                 X_mut_rt: torch.Tensor,
+                 seqlevel_feat: torch.Tensor,
+                 seqlevel_feat_colnames: list[str],
+                 y_score: torch.Tensor | None, 
                  x_init_len,
                  x_mut_len,
-                 indx_seqid_map):
+                 indx_seqid_map: dict[int, int]):
         # B: batch elements; T: sequence length
         # tensor.float32, (B, T), (sequence characters are mapped to 0-3) and 4 for padded characters
         self.X_init_nucl = X_init_nucl
@@ -46,7 +51,7 @@ class PEDataTensor(Dataset):
         self.indx_seqid_map = indx_seqid_map
         self.num_samples = self.X_init_nucl.size(0)  # int, number of sequences
 
-    def __getitem__(self, indx):
+    def __getitem__(self, indx: int) -> PEItem:
         if self.y_score is None:
             y_val = -1.
         else:
@@ -79,23 +84,23 @@ class PEDataTensor(Dataset):
                self.indx_seqid_map[indx])
 
 
-    def __len__(self):
+    def __len__(self) -> int:
         return(self.num_samples)
 
-class PartitionDataTensor(Dataset):
+class PartitionDataTensor(Dataset[PEItem]):
 
-    def __init__(self, pe_datatensor, partition_ids, dsettype, run_num):
+    def __init__(self, pe_datatensor: PEDataTensor, partition_ids: list[int], dsettype: str, run_num: int):
         self.pe_datatensor = pe_datatensor  # instance of :class:`PEDatatensor`
         self.partition_ids = partition_ids  # list of sequence indices
         self.dsettype = dsettype  # string, dataset type (i.e. train, validation, test)
         self.run_num = run_num  # int, run number
         self.num_samples = len(self.partition_ids[:])  # int, number of sequences in the partition
 
-    def __getitem__(self, indx):
+    def __getitem__(self, indx: int) -> PEItem:
         target_id = self.partition_ids[indx]
         return self.pe_datatensor[target_id]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return(self.num_samples)
 
 def extend_matrix(mat, ext_mat_shape, fill_val):
@@ -151,14 +156,14 @@ class MinMaxNormalizer:
             
         self.colnames = self.get_colnames()
   
-    def get_colnames(self):
+    def get_colnames(self) -> list[str]:
         colnames = []
         for tup in self.normalizer_info_max:
             featnames, __ = tup
             colnames += featnames
         return colnames
 
-    def normalize_cont_cols(self, df, normalize_opt = 'max', suffix=''):
+    def normalize_cont_cols(self, df, normalize_opt: Literal['max', 'minmax', 'standardize'] = 'max', suffix: str = '') -> list[str]:
         if normalize_opt == 'max':
             print('--- max normalization ---')
             return self.normalize_cont_cols_max(df, suffix=suffix)
@@ -168,8 +173,10 @@ class MinMaxNormalizer:
         elif normalize_opt == 'standardize':
             print('--- standardized normalization ---')
             return self.normalize_cont_cols_meanstd(df, suffix=suffix)
+        else:
+            raise ValueError(f'Invalid normalization option: {normalize_opt}')
         
-    def normalize_cont_cols_meanstd(self, df, suffix=''):
+    def normalize_cont_cols_meanstd(self, df, suffix: str = '') -> list[str]:
         """inplace min-max normalization of columns"""
         normalizer_info = self.normalizer_info_minmax
         cont_colnames = []
@@ -181,7 +188,7 @@ class MinMaxNormalizer:
                 cont_colnames.append(colname+suffix)
         return cont_colnames
 
-    def normalize_cont_cols_minmax(self, df, suffix=''):
+    def normalize_cont_cols_minmax(self, df, suffix: str = '') -> list[str]:
         """inplace min-max normalization of columns"""
         normalizer_info = self.normalizer_info_minmax
         cont_colnames = []
@@ -192,7 +199,7 @@ class MinMaxNormalizer:
                 cont_colnames.append(colname+suffix)
         return cont_colnames
 
-    def normalize_cont_cols_max(self, df, suffix=''):
+    def normalize_cont_cols_max(self, df, suffix: str = '') -> list[str]:
         """inplace max normalization of columns"""
         normalizer_info = self.normalizer_info_max
         cont_colnames = []
@@ -217,7 +224,7 @@ def get_seqlevel_featnames(suffix='_norm'):
                    norm_colnames[1:] + ['original_base_mt_nan', 'edited_base_mt_nan']
     return seqfeat_cols
 
-def create_datatensor(data_df, proc_seq_init_df, num_init_cols,  proc_seq_mut_df, num_mut_cols, cont_cols, window=10, y_ref=[]):
+def create_datatensor(data_df: pd.DataFrame, proc_seq_init_df: pd.DataFrame, num_init_cols: int, proc_seq_mut_df: pd.DataFrame, num_mut_cols: int, cont_cols: list[str], window=10, y_ref=[]) -> PEDataTensor:
     """create a instance of DataTensor from processeed/cleaned dataframe
     
     Args:
@@ -343,7 +350,7 @@ def create_datatensor(data_df, proc_seq_init_df, num_init_cols,  proc_seq_mut_df
         print('--- aligned initial and mutated sequences ---')
 
     seq_ids = data_df['seq_id'].values
-    indx_seqid_map = {i:seq_ids[i] for i in range(len(seq_ids))}
+    indx_seqid_map: dict[int, str] = {i:seq_ids[i] for i in range(len(seq_ids))}
 
     if len(y_ref):
         # y_score = torch.from_numpy(data_df['y'].values).reshape(-1,1)
@@ -501,7 +508,7 @@ def report_label_distrib(labels):
     for i, label in enumerate(classes):
         print("class:", label, "norm count:", norm_counts[i])
 
-def generate_partition_datatensor(pe_datatensor, data_partitions):
+def generate_partition_datatensor(pe_datatensor: PEDataTensor, data_partitions: dict[int, dict[str, list[int]]]) -> dict[int, dict[str, PartitionDataTensor]]:
     datatensor_partitions = {}
     for run_num in data_partitions:
         datatensor_partitions[run_num] = {}
@@ -565,14 +572,14 @@ class ConcatDataLoaders():
     
     """
 
-    def __init__(self, dataloaders, dataset_names, mode='cycle'):
+    def __init__(self, dataloaders: list[DataLoader[PEItem]], dataset_names: list[str], mode: Literal['cycle', 'common_size'] = 'cycle'):
         self.dataloaders = dataloaders
         self.datasetnames = dataset_names
         self.mode = mode
         self.__len__()
         
     def __iter__(self):
-        self.dloader_iterators = []
+        self.dloader_iterators: list[Iterator[PEItemBatch]] = []
         for data_loader in self.dataloaders:
             if self.mode == 'cycle':
                 if len(data_loader) < self.max_num_batches:
@@ -581,11 +588,13 @@ class ConcatDataLoaders():
                     iterator = iter(data_loader)
             elif self.mode == 'common_size':
                 iterator = iter(data_loader)
+            else:
+                raise ValueError(f"Invalid mode: {self.mode}")
             self.dloader_iterators.append(iterator)
         return self
 
     def __next__(self):
-        batches_lst = []
+        batches_lst: list[PEItemBatch] = []
         for dloader_iter in self.dloader_iterators:
             batch = next(dloader_iter)
             batches_lst.append(batch)
@@ -608,7 +617,7 @@ class ConcatDataLoaders():
             return min_val
 
     
-def construct_load_multiple_dataloaders(dataset_fold_lst, dsettypes, config, wrk_dir):
+def construct_load_multiple_dataloaders(dataset_fold_lst: list[dict[str, PartitionDataTensor]], dsettypes, config, wrk_dir):
     """construct dataloaders for the dataset for one fold
 
        Args:

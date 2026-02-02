@@ -199,7 +199,7 @@ def compute_momentum_scheduler(momen_0, momen_max, num_iter, annealing_percent):
     return momentum_vals
 
 
-def build_predictions_df(seq_ids, true_score, pred_score, y_ref_names, dset_names=None):
+def build_predictions_df(seq_ids, true_score, pred_score, y_ref_names, dset_names=None) -> pd.DataFrame:
          
     
     seqid_inpseq_df = pd.DataFrame(seq_ids)

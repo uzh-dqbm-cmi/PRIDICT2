@@ -14,7 +14,7 @@ from .model import AnnotEmbeder_InitSeq, AnnotEmbeder_MutSeq, SH_Attention, Feat
                    MLPEmbedder, MLPDecoder, MaskGenerator, MLPDecoderDistribution, init_params_
 from ..rnn.rnn import RNN_Net
 
-from .dataset import construct_load_dataloaders, construct_load_multiple_dataloaders, compute_correction_type_weight
+from .dataset import PartitionDataTensor, construct_load_dataloaders, construct_load_multiple_dataloaders, compute_correction_type_weight
 from .hyperparam import RNNHyperparamConfig,  get_hyperparam_options
 from .loss import CELoss, BalancedMSELoss
 
@@ -644,7 +644,7 @@ def run_cont_pe_RNN_distribution(data_partition, dsettypes, config, options, wrk
     dump_dict_content(score_dict, list(score_dict.keys()), 'score', wrk_dir)
 
 
-def run_cont_pe_RNN_distribution_multidata(data_partition, dsettypes, config, options, wrk_dir, 
+def run_cont_pe_RNN_distribution_multidata(data_partition: list[dict[str, PartitionDataTensor]], dsettypes, config, options, wrk_dir, 
                                                  state_dict_dir=None, to_gpu=True, gpu_index=0):
     pid = "{}".format(os.getpid())  # process id description
 
@@ -1892,7 +1892,7 @@ def run_tune_cont_pe_RNN_kldiv(data_partition, dsettypes, config, options, wrk_d
     dump_dict_content(score_dict, list(score_dict.keys()), 'score', wrk_dir)
 
 
-def tune_trainval_run(datatensor_partitions, config_map, train_val_dir, state_dict_dir, run_gpu_map, num_epochs=20):
+def tune_trainval_run(datatensor_partitions: dict[int, list[dict[str, PartitionDataTensor]]], config_map, train_val_dir, state_dict_dir, run_gpu_map, num_epochs=20):
     dsettypes = ['train', 'validation']
     mconfig, options = config_map
     options['num_epochs'] = num_epochs  # override number of epochs using user specified value
@@ -2012,7 +2012,7 @@ def test_run(datatensor_partitions, config_map, train_val_dir, test_dir, run_gpu
 
 
 
-def train_val_multidata_run(dtensor_partitions_multidata, config_map, train_val_dir, run_gpu_map, statedict_dir=None, num_epochs=20):
+def train_val_multidata_run(dtensor_partitions_multidata: dict[int, list[dict[str, PartitionDataTensor]]], config_map, train_val_dir, run_gpu_map, statedict_dir=None, num_epochs=20):
     dsettypes = ['train', 'validation']
     mconfig, options = config_map
     options['num_epochs'] = num_epochs  # override number of epochs using user specified value
@@ -2051,7 +2051,7 @@ def train_val_multidata_run(dtensor_partitions_multidata, config_map, train_val_
 
 
 
-def test_multidata_run(dtensor_partitions_multidata, config_map, train_val_dir, test_dir, run_gpu_map, num_epochs=1):
+def test_multidata_run(dtensor_partitions_multidata: dict[int, list[dict[str, PartitionDataTensor]]], config_map, train_val_dir, test_dir, run_gpu_map, num_epochs=1):
     dsettypes = ['test']
     mconfig, options = config_map
     options['num_epochs'] = num_epochs  # override number of epochs using user specified value
